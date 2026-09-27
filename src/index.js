@@ -105,17 +105,22 @@ function pageSection(p) {
   if(docs.length)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Documents</span>${docs.map(d=>`<div class="chk ${d.done?'done':''}"><span class="m">${d.done?'✓':'○'}</span><span>${esc(d.text)}</span></div>`).join('')}</div>`;
   h+=`</div>`; return h;
 }
-function todaySection(pages, clientName){
-  let latestUpdate=null,openSteps=0; for(const p of pages){const c=p.content||{};(c.updates||[]).forEach(u=>{if(!latestUpdate)latestUpdate=u;});openSteps+=(c.nextSteps||[]).filter(s=>s&&s.text&&!s.done).length;}
-  const tour=firstItinerary(pages);
+function teamRow(name, role, phone){ const tel=(phone||'').replace(/\D/g,''); const t=tel.length===10?'+1'+tel:(tel.length===11&&tel[0]==='1'?'+'+tel:'+'+tel); let h=`<div class="row" style="margin-top:10px"><div><div style="font-weight:600">${esc(name)}</div><div style="color:var(--muted);font-size:13px">${esc(role)}</div></div>`; if(tel.length>=10)h+=`<div style="display:flex;gap:8px"><a class="btn small" href="tel:${t}">Call</a><a class="btn small ghost" href="sms:${t}">Text</a></div>`; return h+`</div>`; }
+function todaySection(pages, clientName, stage, lender){
+  let latestUpdate=null,openSteps=0,keyDates=[];
+  for(const p of pages){const c=p.content||{};(c.updates||[]).forEach(u=>{if(!latestUpdate)latestUpdate=u;});openSteps+=(c.nextSteps||[]).filter(s=>s&&s.text&&!s.done).length;(c.keyDates||[]).forEach(d=>keyDates.push(d));}
+  const tour=firstItinerary(pages); const uc=stage==='under_contract', closed=stage==='closed';
   let h=`<div data-sec="today"><h1 id="greet">Welcome, ${esc(clientName)}.</h1><p class="sub">Everything for your journey with Jade, in one place.</p><div class="grid two">`;
-  if(tour){const n=(tour.c.itinerary||[]).filter(s=>s.address).length;const fs=(tour.c.itinerary||[])[0]||{};h+=`<div class="card feature"><span class="klabel">Right now</span><div class="big">Tour ${esc(tour.c.tourDate)}</div><div style="opacity:.9;margin-top:4px">${n} home${n===1?'':'s'}${fs.time?' · starts '+esc(fs.time):''}</div><a class="btn ghost" style="margin-top:12px;border-color:rgba(255,255,255,.6);color:#fff" data-go="tour">View tour</a></div>`;}
+  if(closed){ h+=`<div class="card feature"><span class="klabel">Congratulations</span><div class="big">It\u2019s official \u2014 welcome home.</div><div style="opacity:.9;margin-top:4px">Your transaction has closed. Thank you for trusting Jade.</div></div>`; }
+  else if(uc){ const closing=keyDates.find(d=>/clos/i.test(d.label||'')); h+=`<div class="card feature"><span class="klabel">Milestone</span><div class="big">You\u2019re under contract</div><div style="opacity:.9;margin-top:4px">${closing?('Closing '+esc(closing.date)):'On the path to closing \u2014 here\u2019s what\u2019s next.'}</div></div>`; }
+  else if(tour){const n=(tour.c.itinerary||[]).filter(s=>s.address).length;const fs=(tour.c.itinerary||[])[0]||{};h+=`<div class="card feature"><span class="klabel">Right now</span><div class="big">Tour ${esc(tour.c.tourDate)}</div><div style="opacity:.9;margin-top:4px">${n} home${n===1?'':'s'}${fs.time?' \u00b7 starts '+esc(fs.time):''}</div><a class="btn ghost" style="margin-top:12px;border-color:rgba(255,255,255,.6);color:#fff" data-go="tour">View tour</a></div>`;}
   else if(latestUpdate){h+=`<div class="card feature"><span class="klabel">Latest</span><div class="big" style="font-size:19px;line-height:1.3;margin-top:8px">${esc(latestUpdate.text)}</div></div>`;}
-  h+=`<div class="card"><span class="klabel">Needs you</span><div class="big" style="font-size:20px">${openSteps>0?openSteps+' next step'+(openSteps===1?'':'s'):'You’re all caught up'}</div>${openSteps>0&&pages[0]?`<a class="btn small" style="margin-top:10px" data-go="p-${SLUG_BY_TYPE[pages[0].page_type]}">Review</a>`:''}</div>`;
+  h+=`<div class="card"><span class="klabel">Needs you</span><div class="big" style="font-size:20px">${openSteps>0?openSteps+' next step'+(openSteps===1?'':'s'):'You\u2019re all caught up'}</div>${openSteps>0&&pages[0]?`<a class="btn small" style="margin-top:10px" data-go="p-${SLUG_BY_TYPE[pages[0].page_type]}">Review</a>`:''}</div>`;
   h+=`</div>`;
-  if(latestUpdate)h+=`<div class="card" style="margin-top:14px"><span class="klabel">From your agent</span><p style="margin:6px 0 0">${esc(latestUpdate.text)}</p></div>`;
-  // Ranked homes (filled by JS)
-  if(tour)h+=`<div class="card" style="margin-top:14px"><div class="row"><span class="klabel">Your homes, ranked</span><span class="seg" id="rankSeg"><button data-view="both" class="on">Both</button><button data-view="you">You</button><button data-view="partner">Partner</button></span></div><div id="rankList" style="margin-top:8px"></div><div class="why" style="margin-top:8px">Ranked from your ratings — Jade weighs Love over Maybe. Rate homes on the Tour tab.</div></div>`;
+  if(uc && keyDates.length){h+=`<div class="card" style="margin-top:14px"><span class="klabel">Important dates</span>${keyDates.map(d=>`<div class="row" style="margin-top:8px"><span>${esc(d.label)}</span><span style="color:var(--muted)">${esc(d.date)}</span></div>`).join('')}</div>`;}
+  if(uc){ const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{}; h+=`<div class="card" style="margin-top:14px"><span class="klabel">Your team</span>`+teamRow(agent.name||'Your agent','Agent',agent.phone)+((lender&&(lender.name||lender.phone))?teamRow(lender.name||'Versatile Lending','Lender',lender.phone):'')+`</div>`; }
+  if(latestUpdate && !closed)h+=`<div class="card" style="margin-top:14px"><span class="klabel">From your agent</span><p style="margin:6px 0 0">${esc(latestUpdate.text)}</p></div>`;
+  if(tour && !uc && !closed)h+=`<div class="card" style="margin-top:14px"><div class="row"><span class="klabel">Your homes, ranked</span><span class="seg" id="rankSeg"><button data-view="both" class="on">Both</button><button data-view="you">You</button><button data-view="partner">Partner</button></span></div><div id="rankList" style="margin-top:8px"></div><div class="why" style="margin-top:8px">Ranked from your ratings \u2014 Jade weighs Love over Maybe. Rate homes on the Tour tab.</div></div>`;
   h+=`<div class="tiles">`; for(const p of pages)h+=`<div class="tile" data-go="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}<div class="k">Open</div></div>`;
   if(tour)h+=`<div class="tile" data-go="tour">Tour<div class="k">Rate homes</div></div>`;
   h+=`<div class="tile" data-go="messages">Messages<div class="k">Reach your agent</div></div><div class="tile" data-go="settings">Settings<div class="k">Notifications</div></div></div></div>`; return h;
@@ -137,13 +142,15 @@ function renderApp(pages, clientSlug, openTab, fb){
   const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{};
   const cid=(pages[0]&&pages[0].client_id)||'';
   const tour=firstItinerary(pages);
+  const stage=(pages[0]&&pages[0].stage)||'active';
+  const lender={name:(pages[0]&&pages[0].lender_name)||'',phone:(pages[0]&&pages[0].lender_phone)||''};
   const listings=tour?((tour.c.itinerary||[]).filter(s=>s.address).map((s)=>({id:s.id||s.address,address:s.address}))):[];
   let tabs=`<button class="tab" data-tab="today">Today</button>`;
   for(const p of pages)tabs+=`<button class="tab" data-tab="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}</button>`;
   if(tour)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
   tabs+=`<button class="tab" data-tab="messages">Messages</button><button class="tab" data-tab="settings">Settings</button>`;
   let body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
-  body+=todaySection(pages,clientName);
+  body+=todaySection(pages,clientName,stage,lender);
   for(const p of pages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug);
   body+=messagesSection(agent.name);
@@ -180,7 +187,7 @@ function renderApp(pages, clientSlug, openTab, fb){
 }
 
 async function fetchFeedback(clientSlug){ try{ const r=await fetch(`${SB}/rest/v1/client_listing_feedback?select=listing_id,reaction,note,rater&client_slug=eq.${encodeURIComponent(clientSlug)}`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]=m[x.listing_id]||{}; m[x.listing_id][x.rater||'you']={reaction:x.reaction,note:x.note}; }); return m; }catch(e){ return {}; } }
-async function fetchPages(clientSlug){ const q=`${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id&client_slug=eq.${encodeURIComponent(clientSlug)}&status=eq.published&order=page_type.asc`; const r=await fetch(q,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }
+async function fetchPages(clientSlug){ const q=`${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id,stage,lender_name,lender_phone&client_slug=eq.${encodeURIComponent(clientSlug)}&status=eq.published&order=page_type.asc`; const r=await fetch(q,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }
 
 export default {
   async fetch(request, env){
