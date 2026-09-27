@@ -1,0 +1,9 @@
+{
+  "name": "jade-client-sites",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jade Real Estate — public client-facing pages (clients.jaderealestate.com). Pages are created & edited in the Jade agent app; this project renders the published ones.",
+  "scripts": {
+    "build": "echo 'static site — nothing to build'"
+  }
+}
