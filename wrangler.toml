@@ -1,0 +1,8 @@
+name = "jade-client-sites"
+main = "src/index.js"
+compatibility_date = "2025-09-27"
+
+# Serve the static landing page from /public and run the Worker for dynamic routes.
+[assets]
+directory = "./public"
+binding = "ASSETS"

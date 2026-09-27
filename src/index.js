@@ -1,6 +1,6 @@
-// Renders a published Jade client page by its address:
+// Jade client sites (Cloudflare Worker). Renders a PUBLISHED client page by address:
 //   clients.jaderealestate.com/<client-slug>/<page-type>   e.g. /smith-family/listing
-// Pages are authored in the Jade agent app; only status='published' rows are shown.
+// Static landing (public/index.html) is served automatically for matching paths.
 const SB = 'https://fcgarmtbmdsgkcrvmwjv.supabase.co';
 const ANON = 'sb_publishable_k5AzjS458cQ5CRzgZP_jbg_zTe3tQyx';
 const TYPE_BY_SLUG = { buyer: 'buyer_hub', seller: 'seller_hub', listing: 'listing_presentation', closing: 'under_contract' };
@@ -35,8 +35,7 @@ h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:22px;c
 .updates{border-top:1px solid var(--line);margin-top:26px;padding-top:18px}.updates .u{font-size:15px;margin:6px 0}.updates .dt{color:var(--muted)}
 .foot{border-top:1px solid var(--line);margin-top:30px;padding-top:18px;color:var(--muted);font-size:14px}
 .foot .nm{font-weight:600;color:var(--ink)}.brand{font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade);margin-top:4px}
-.na{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}
-.na h1{color:var(--jade)}.na p{color:var(--muted)}
+.na{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}.na h1{color:var(--jade)}.na p{color:var(--muted)}
 `;
 
 function shell(inner, title) {
@@ -45,10 +44,8 @@ function shell(inner, title) {
     `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap">` +
     `<style>${CSS}</style></head><body>${inner}</body></html>`;
 }
-
-function notFound() {
-  return new Response(shell(`<div class="na"><div><h1>Page not available</h1><p>This page hasn't been published yet, or the link is incorrect. Check with your agent.</p></div></div>`, 'Jade Real Estate'), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } });
-}
+function html(body, status) { return new Response(body, { status: status || 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } }); }
+function notFound() { return html(shell(`<div class="na"><div><h1>Page not available</h1><p>This page hasn't been published yet, or the link is incorrect. Check with your agent.</p></div></div>`, 'Jade Real Estate'), 404); }
 
 function renderPage(row) {
   const c = row.content || {};
@@ -76,24 +73,28 @@ function renderPage(row) {
   if (docs.length) h += `<div class="section"><h2>Documents</h2><ul class="docs">${docs.map(d => `<li class="${d.done ? 'done' : ''}"><span class="mark">${d.done ? '✓' : '○'}</span><span>${esc(d.text)}</span></li>`).join('')}</ul></div>`;
   if (cn.length) h += `<div class="notes"><h2>Notes</h2>${cn.map(n => `<div class="u">• ${esc(n.text)}</div>`).join('')}</div>`;
   if (up.length) h += `<div class="updates"><h2>Updates</h2>${up.map(u => `<div class="u"><span class="dt">${esc(u.date)}</span> — ${esc(u.text)}</div>`).join('')}</div>`;
-  h += `<div class="foot"><div class="nm">${esc(ag.name || '')}</div><div>${esc(ag.phone || '')}${ag.email ? ' · ' + esc(ag.email) : ''}</div><div class="brand">Jade Real Estate</div></div>`;
-  h += `</div>`;
-  return new Response(shell(h, (row.client_name ? row.client_name + ' — ' : '') + label), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+  h += `<div class="foot"><div class="nm">${esc(ag.name || '')}</div><div>${esc(ag.phone || '')}${ag.email ? ' · ' + esc(ag.email) : ''}</div><div class="brand">Jade Real Estate</div></div></div>`;
+  return html(shell(h, (row.client_name ? row.client_name + ' — ' : '') + label), 200);
 }
 
-export async function onRequestGet(context) {
-  const url = new URL(context.request.url);
-  const parts = url.pathname.split('/').filter(Boolean);
-  if (parts.length === 0) return context.env.ASSETS.fetch(context.request); // serve public/index.html
-  if (parts.length < 2) return notFound();
-  const clientSlug = decodeURIComponent(parts[0]).toLowerCase();
-  const pageType = TYPE_BY_SLUG[parts[1].toLowerCase()];
-  if (!pageType) return notFound();
-  try {
-    const q = `${SB}/rest/v1/client_pages?select=content,client_name,page_type&client_slug=eq.${encodeURIComponent(clientSlug)}&page_type=eq.${pageType}&status=eq.published&limit=1`;
-    const r = await fetch(q, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } });
-    const rows = await r.json();
-    if (!Array.isArray(rows) || !rows.length) return notFound();
-    return renderPage(rows[0]);
-  } catch (e) { return notFound(); }
-}
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (parts.length < 2) {
+      // no dynamic page here; let static assets answer (landing) or 404
+      if (env.ASSETS) { try { const res = await env.ASSETS.fetch(request); if (res && res.status !== 404) return res; } catch (e) {} }
+      return notFound();
+    }
+    const clientSlug = decodeURIComponent(parts[0]).toLowerCase();
+    const pageType = TYPE_BY_SLUG[parts[1].toLowerCase()];
+    if (!pageType) return notFound();
+    try {
+      const q = `${SB}/rest/v1/client_pages?select=content,client_name,page_type&client_slug=eq.${encodeURIComponent(clientSlug)}&page_type=eq.${pageType}&status=eq.published&limit=1`;
+      const r = await fetch(q, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } });
+      const rows = await r.json();
+      if (!Array.isArray(rows) || !rows.length) return notFound();
+      return renderPage(rows[0]);
+    } catch (e) { return notFound(); }
+  },
+};
