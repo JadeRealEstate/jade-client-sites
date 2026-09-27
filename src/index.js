@@ -60,6 +60,8 @@ textarea{min-height:96px;resize:vertical}
 .react button.on[data-r=maybe]{background:#f5efe1;border-color:var(--gold);color:var(--gold)}
 .react button.on[data-r=pass]{background:#f3eae8;border-color:#9a5a4a;color:#9a5a4a}
 .lnote{margin-top:10px;min-height:56px}
+.prop .addr a{color:var(--jade);text-decoration:none}.prop .addr a:hover{text-decoration:underline}.prop .addr .ext{font-size:12px;opacity:.55}
+.daysec{margin-top:24px}.daysec:first-of-type{margin-top:16px}
 .rank{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}.rank:first-child{border-top:0}
 .rank .n{font-family:'DM Serif Display',serif;font-size:22px;color:var(--jade);width:26px;flex:none}
 .rank .why{color:var(--muted);font-size:13px;margin-top:2px}
@@ -80,18 +82,29 @@ function shell(inner, title) {
 const htmlResp = (b, s) => new Response(b, { status: s || 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 const notFound = () => htmlResp(shell(`<div class="na"><div><h1 style="color:var(--jade)">Page not available</h1><p style="color:var(--muted)">This link isn't active yet. Check with your agent.</p></div></div>`, 'Jade Real Estate'), 404);
 
-function firstItinerary(pages){ for(const p of pages){ const c=p.content||{}; if(Array.isArray(c.itinerary)&&c.itinerary.length&&c.tourDate) return {page:p,c}; } return null; }
-function calLinks(c, clientSlug, pageSlug) {
-  const it=(c.itinerary||[]).filter(s=>s&&s.address); if(!c.tourDate||!it.length) return '';
-  const stops=it.map(s=>({address:s.address,note:s.note||'',t:parseTime(s.time)||{h:9,min:0}}));
+function daysFromContent(c){
+  if(Array.isArray(c.tourDays)&&c.tourDays.length){ return c.tourDays.map(d=>({date:d.date||'',stops:(d.stops||[]).filter(s=>s&&s.address)})).filter(d=>d.date&&d.stops.length); }
+  if(Array.isArray(c.itinerary)&&c.itinerary.length&&c.tourDate){ return [{date:c.tourDate,stops:c.itinerary.filter(s=>s&&s.address)}]; }
+  return [];
+}
+function tourDaysOf(pages){ for(const p of pages){ const c=p.content||{}; const days=daysFromContent(c); if(days.length) return {page:p,c,days}; } return null; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){ if(!d) return ''; const p=String(d).split('-'); if(p.length!==3) return d; const dt=new Date(+p[0],+p[1]-1,+p[2]); if(isNaN(dt.getTime())) return d; return dt.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric'}); }
+function stopScore(fb,lid){ const e=(fb&&fb[lid])||{}; const v=r=>r==='love'?3:r==='maybe'?1:r==='pass'?-2:0; return v((e.you||{}).reaction)+v((e.partner||{}).reaction); }
+function mapUrl(a){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a); }
+function addrLink(s){ const a=esc(s.address); const url=(s.url&&/^https?:\/\//i.test(s.url))?s.url:mapUrl(s.address); return `<a href="${esc(url)}" target="_blank" rel="noreferrer">${a} <span class="ext">↗</span></a>`; }
+function propCard(s){ const lid=s.id||s.address; return `<div class="prop"><div class="addr">${addrLink(s)}</div>${s.time?`<div style="color:var(--muted);font-size:13px">${esc(s.time)}</div>`:''}`+(s.note?`<div style="color:var(--muted);font-size:14px;margin-top:6px">${esc(s.note)}</div>`:'')+`<div class="react" data-listing="${esc(lid)}" data-address="${esc(s.address)}"><button data-r="love">♡ Love</button><button data-r="maybe">◐ Maybe</button><button data-r="pass">✕ Pass</button></div><textarea class="lnote" data-listing="${esc(lid)}" data-address="${esc(s.address)}" placeholder="Your notes on this home..."></textarea></div>`; }
+function calLinksDay(day, clientSlug, pageSlug, di) {
+  const stops=(day.stops||[]).map(s=>({address:s.address,note:s.note||'',t:parseTime(s.time)||{h:9,min:0}}));
+  if(!day.date||!stops.length) return '';
   const endT=addMin(stops[stops.length-1].t,45); const title='Home tour with Jade Real Estate';
   const details='Your showing itinerary:%0A'+stops.map((s,i)=>encodeURIComponent((i+1)+'. '+s.address+(s.note?' — '+s.note:''))).join('%0A'); const loc=encodeURIComponent(stops[0].address);
-  const g='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+stampLocal(c.tourDate,stops[0].t)+'/'+stampLocal(c.tourDate,endT)+'&details='+details+'&location='+loc;
-  const ms='https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject='+encodeURIComponent(title)+'&startdt='+isoLocal(c.tourDate,stops[0].t)+'&enddt='+isoLocal(c.tourDate,endT)+'&location='+loc+'&body='+details;
-  return `<div class="calrow"><a href="/${clientSlug}/${pageSlug}.ics">Apple Calendar</a><a href="${g}" target="_blank" rel="noreferrer">Google</a><a href="${ms}" target="_blank" rel="noreferrer">Outlook</a></div>`;
+  const g='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+stampLocal(day.date,stops[0].t)+'/'+stampLocal(day.date,endT)+'&details='+details+'&location='+loc;
+  const ms='https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject='+encodeURIComponent(title)+'&startdt='+isoLocal(day.date,stops[0].t)+'&enddt='+isoLocal(day.date,endT)+'&location='+loc+'&body='+details;
+  return `<div class="calrow"><a href="/${clientSlug}/${pageSlug}.ics?d=${di}">Apple Calendar</a><a href="${g}" target="_blank" rel="noreferrer">Google</a><a href="${ms}" target="_blank" rel="noreferrer">Outlook</a></div>`;
 }
-function buildICS(c){ const it=(c.itinerary||[]).filter(s=>s&&s.address); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jade Real Estate//EN','CALSCALE:GREGORIAN']; const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z');
-  it.forEach((s,i)=>{const t=parseTime(s.time)||{h:9+i,min:0};const e=addMin(t,30);lines.push('BEGIN:VEVENT','UID:'+Date.now()+'-'+i+'@jaderealestate.com','DTSTAMP:'+stamp,'DTSTART:'+stampLocal(c.tourDate,t),'DTEND:'+stampLocal(c.tourDate,e),'SUMMARY:'+('Showing: '+s.address).replace(/[,;\\]/g,' '),'LOCATION:'+String(s.address).replace(/[,;\\]/g,' '),'DESCRIPTION:'+String(s.note||'Home tour').replace(/[,;\\]/g,' '),'END:VEVENT');});
+function buildICS(c, dOnly){ const days=daysFromContent(c); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jade Real Estate//EN','CALSCALE:GREGORIAN']; const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z'); let uid=0;
+  days.forEach((day,di)=>{ if(dOnly!=null && di!==dOnly) return; day.stops.forEach((s,i)=>{const t=parseTime(s.time)||{h:9+i,min:0};const e=addMin(t,30);lines.push('BEGIN:VEVENT','UID:'+Date.now()+'-'+(uid++)+'@jaderealestate.com','DTSTAMP:'+stamp,'DTSTART:'+stampLocal(day.date,t),'DTEND:'+stampLocal(day.date,e),'SUMMARY:'+('Showing: '+s.address).replace(/[,;\\]/g,' '),'LOCATION:'+String(s.address).replace(/[,;\\]/g,' '),'DESCRIPTION:'+String(s.note||'Home tour').replace(/[,;\\]/g,' '),'END:VEVENT');}); });
   lines.push('END:VCALENDAR'); return lines.join('\r\n'); }
 
 function pageSection(p) {
@@ -109,11 +122,11 @@ function teamRow(name, role, phone){ const tel=(phone||'').replace(/\D/g,''); co
 function todaySection(pages, clientName, stage, lender){
   let latestUpdate=null,openSteps=0,keyDates=[];
   for(const p of pages){const c=p.content||{};(c.updates||[]).forEach(u=>{if(!latestUpdate)latestUpdate=u;});openSteps+=(c.nextSteps||[]).filter(s=>s&&s.text&&!s.done).length;(c.keyDates||[]).forEach(d=>keyDates.push(d));}
-  const tour=firstItinerary(pages); const uc=stage==='under_contract', closed=stage==='closed';
+  const td=tourDaysOf(pages); const upcoming=td?td.days.filter(d=>(d.date||'')>=todayStr()):[]; const nextDay=upcoming[0]; const tour=!!td; const uc=stage==='under_contract', closed=stage==='closed';
   let h=`<div data-sec="today"><h1 id="greet">Welcome, ${esc(clientName)}.</h1><p class="sub">Everything for your journey with Jade, in one place.</p><div class="grid two">`;
   if(closed){ h+=`<div class="card feature"><span class="klabel">Congratulations</span><div class="big">It\u2019s official \u2014 welcome home.</div><div style="opacity:.9;margin-top:4px">Your transaction has closed. Thank you for trusting Jade.</div></div>`; }
   else if(uc){ const closing=keyDates.find(d=>/clos/i.test(d.label||'')); h+=`<div class="card feature"><span class="klabel">Milestone</span><div class="big">You\u2019re under contract</div><div style="opacity:.9;margin-top:4px">${closing?('Closing '+esc(closing.date)):'On the path to closing \u2014 here\u2019s what\u2019s next.'}</div></div>`; }
-  else if(tour){const n=(tour.c.itinerary||[]).filter(s=>s.address).length;const fs=(tour.c.itinerary||[])[0]||{};h+=`<div class="card feature"><span class="klabel">Right now</span><div class="big">Tour ${esc(tour.c.tourDate)}</div><div style="opacity:.9;margin-top:4px">${n} home${n===1?'':'s'}${fs.time?' \u00b7 starts '+esc(fs.time):''}</div><a class="btn ghost" style="margin-top:12px;border-color:rgba(255,255,255,.6);color:#fff" data-go="tour">View tour</a></div>`;}
+  else if(nextDay){const n=nextDay.stops.length;const fs=nextDay.stops[0]||{};h+=`<div class="card feature"><span class="klabel">Next tour</span><div class="big">${esc(fmtDate(nextDay.date))}</div><div style="opacity:.9;margin-top:4px">${n} home${n===1?'':'s'}${fs.time?' \u00b7 starts '+esc(fs.time):''}</div><a class="btn ghost" style="margin-top:12px;border-color:rgba(255,255,255,.6);color:#fff" data-go="tour">View tour</a></div>`;}
   else if(latestUpdate){h+=`<div class="card feature"><span class="klabel">Latest</span><div class="big" style="font-size:19px;line-height:1.3;margin-top:8px">${esc(latestUpdate.text)}</div></div>`;}
   h+=`<div class="card"><span class="klabel">Needs you</span><div class="big" style="font-size:20px">${openSteps>0?openSteps+' next step'+(openSteps===1?'':'s'):'You\u2019re all caught up'}</div>${openSteps>0&&pages[0]?`<a class="btn small" style="margin-top:10px" data-go="p-${SLUG_BY_TYPE[pages[0].page_type]}">Review</a>`:''}</div>`;
   h+=`</div>`;
@@ -125,13 +138,15 @@ function todaySection(pages, clientName, stage, lender){
   if(tour)h+=`<div class="tile" data-go="tour">Tour<div class="k">Rate homes</div></div>`;
   h+=`<div class="tile" data-go="messages">Messages<div class="k">Reach your agent</div></div><div class="tile" data-go="settings">Settings<div class="k">Notifications</div></div></div></div>`; return h;
 }
-function tourSection(pages, clientSlug){
-  const tour=firstItinerary(pages); if(!tour) return ''; const c=tour.c; const it=(c.itinerary||[]).filter(s=>s.address);
-  let h=`<div data-sec="tour" hidden><h1>Tour ${esc(c.tourDate||'')}</h1><p class="sub">${it.length} home${it.length===1?'':'s'} on your route — rate each as you go.</p>`;
-  h+=`<div class="card" style="margin-top:14px"><span class="klabel">Add the day to your calendar</span>`+calLinks(c,clientSlug,SLUG_BY_TYPE[tour.page.page_type]||'buyer')+`</div>`;
+function tourSection(pages, clientSlug, fb){
+  const td=tourDaysOf(pages); if(!td) return ''; const pageSlug=SLUG_BY_TYPE[td.page.page_type]||'buyer';
+  const today=todayStr(); const upcoming=td.days.filter(d=>(d.date||'')>=today); const past=td.days.filter(d=>(d.date||'')<today);
+  const totalUp=upcoming.reduce((n,d)=>n+d.stops.length,0);
+  let h=`<div data-sec="tour" hidden><h1>Your tours</h1><p class="sub">${totalUp?totalUp+' home'+(totalUp===1?'':'s')+' coming up — rate each as you go.':'Your showings, and how you rated them.'}</p>`;
   h+=`<div class="row" style="margin-top:16px"><span class="klabel">Rating as</span><span class="seg" id="raterSeg"><button data-rater="you" class="on">You</button><button data-rater="partner">Partner</button></span></div>`;
   h+=`<p class="why" style="margin-top:6px">Buying with someone? Switch to Partner to add their take. (Separate logins for each of you arrive with accounts.)</p>`;
-  it.forEach((s,i)=>{const lid=s.id||s.address;h+=`<div class="prop"><div class="addr">${esc(s.address)}</div>${s.time?`<div style="color:var(--muted);font-size:13px">${esc(s.time)}</div>`:''}`+(s.note?`<div style="color:var(--muted);font-size:14px;margin-top:6px">${esc(s.note)}</div>`:'')+`<div class="react" data-listing="${esc(lid)}" data-address="${esc(s.address)}"><button data-r="love">♡ Love</button><button data-r="maybe">◐ Maybe</button><button data-r="pass">✕ Pass</button></div><textarea class="lnote" data-listing="${esc(lid)}" data-address="${esc(s.address)}" placeholder="Your notes on this home..."></textarea></div>`;});
+  upcoming.forEach(d=>{ const di=td.days.indexOf(d); h+=`<div class="daysec"><div class="row"><span class="klabel">${esc(fmtDate(d.date))}</span><span class="klabel">${d.stops.length} home${d.stops.length===1?'':'s'}</span></div><div class="card" style="margin-top:10px"><span class="klabel">Add this day to your calendar</span>`+calLinksDay(d,clientSlug,pageSlug,di)+`</div>`+d.stops.map(propCard).join('')+`</div>`; });
+  if(past.length){ let ps=[]; past.forEach(d=>d.stops.forEach(s=>ps.push(s))); ps.sort((a,b)=>stopScore(fb,b.id||b.address)-stopScore(fb,a.id||a.address)); h+=`<div class="daysec"><span class="klabel">Past showings</span><p class="why" style="margin-top:4px">Homes you loved rise to the top.</p>`+ps.map(propCard).join('')+`</div>`; }
   h+=`</div>`; return h;
 }
 function messagesSection(a){return `<div data-sec="messages" hidden><h1>Messages</h1><p class="sub">Send a note or question straight to ${esc(a||'your agent')}.</p><div class="card" style="margin-top:16px"><form id="noteForm"><label class="f" for="nName">Your name</label><input type="text" id="nName" placeholder="Optional"><label class="f" for="nBody">Message</label><textarea id="nBody" placeholder="Loved the yard on Gaylord — can we see it again?"></textarea><div style="margin-top:12px"><button class="btn" type="submit">Send</button><span class="status" id="nStatus"></span></div></form></div></div>`;}
@@ -141,18 +156,18 @@ function renderApp(pages, clientSlug, openTab, fb){
   const clientName=(pages[0]&&pages[0].client_name)||'there';
   const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{};
   const cid=(pages[0]&&pages[0].client_id)||'';
-  const tour=firstItinerary(pages);
+  const td=tourDaysOf(pages);
   const stage=(pages[0]&&pages[0].stage)||'active';
   const lender={name:(pages[0]&&pages[0].lender_name)||'',phone:(pages[0]&&pages[0].lender_phone)||''};
-  const listings=tour?((tour.c.itinerary||[]).filter(s=>s.address).map((s)=>({id:s.id||s.address,address:s.address}))):[];
+  const listings=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const id=s.id||s.address;if(!seen[id]){seen[id]=1;out.push({id,address:s.address});}}));return out;})();
   let tabs=`<button class="tab" data-tab="today">Today</button>`;
   for(const p of pages)tabs+=`<button class="tab" data-tab="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}</button>`;
-  if(tour)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
+  if(td)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
   tabs+=`<button class="tab" data-tab="messages">Messages</button><button class="tab" data-tab="settings">Settings</button>`;
   let body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   body+=todaySection(pages,clientName,stage,lender);
   for(const p of pages)body+=pageSection(p);
-  body+=tourSection(pages,clientSlug);
+  body+=tourSection(pages,clientSlug,fb);
   body+=messagesSection(agent.name);
   body+=settingsSection();
   body+=`<div class="foot">${esc(agent.name||'')}${agent.phone?' · '+esc(agent.phone):''}<br><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span></div></div>`;
@@ -194,7 +209,7 @@ export default {
     const url=new URL(request.url); const parts=url.pathname.split('/').filter(Boolean);
     if(parts.length===0){ if(env.ASSETS){try{const res=await env.ASSETS.fetch(request);if(res&&res.status!==404)return res;}catch(e){}} return notFound(); }
     const clientSlug=decodeURIComponent(parts[0]).toLowerCase();
-    if(parts[1]&&parts[1].toLowerCase().endsWith('.ics')){ const type=TYPE_BY_SLUG[parts[1].toLowerCase().slice(0,-4)]; const pages=await fetchPages(clientSlug); const p=pages.find(x=>x.page_type===type)||pages.find(x=>(x.content||{}).itinerary); if(!p)return notFound(); return new Response(buildICS(p.content||{}),{headers:{'content-type':'text/calendar; charset=utf-8','content-disposition':'attachment; filename="jade-tour.ics"'}}); }
+    if(parts[1]&&parts[1].toLowerCase().endsWith('.ics')){ const type=TYPE_BY_SLUG[parts[1].toLowerCase().slice(0,-4)]; const pages=await fetchPages(clientSlug); const p=pages.find(x=>x.page_type===type)||pages.find(x=>daysFromContent(x.content||{}).length); if(!p)return notFound(); const dq=url.searchParams.get('d'); const di=(dq!=null&&/^\d+$/.test(dq))?parseInt(dq,10):null; return new Response(buildICS(p.content||{},di),{headers:{'content-type':'text/calendar; charset=utf-8','content-disposition':'attachment; filename="jade-tour.ics"'}}); }
     try{ const pages=await fetchPages(clientSlug); if(!pages.length)return notFound(); let openTab='today'; if(parts[1]&&TYPE_BY_SLUG[parts[1].toLowerCase()])openTab='p-'+parts[1].toLowerCase(); const fb=await fetchFeedback(clientSlug); return renderApp(pages,clientSlug,openTab,fb); }catch(e){ return notFound(); }
   },
 };
