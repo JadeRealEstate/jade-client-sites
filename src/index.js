@@ -61,6 +61,20 @@ textarea{min-height:96px;resize:vertical}
 .status{font-size:13px;color:var(--jade);margin-left:10px}
 .foot{margin-top:26px;color:var(--muted);font-size:13px;text-align:center}
 .na{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}
+.prop{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}
+.prop .addr{font-weight:600}
+.react{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.react button{flex:1;min-width:92px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:11px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted)}
+.react button.on[data-r=love]{background:#eaf3ec;border-color:var(--jade);color:var(--jade)}
+.react button.on[data-r=maybe]{background:#f5efe1;border-color:var(--gold);color:var(--gold)}
+.react button.on[data-r=pass]{background:#f3eae8;border-color:#9a5a4a;color:#9a5a4a}
+.lnote{margin-top:10px;min-height:56px}
+.contactbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;gap:10px;max-width:900px;margin:0 auto;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.contactbar a{flex:1;text-align:center;border-radius:10px;padding:12px;font-weight:600;text-decoration:none;font-size:15px}
+.contactbar .call{background:var(--jade);color:#fff}
+.contactbar .text{background:transparent;border:1px solid var(--jade);color:var(--jade)}
+.wrap{padding-bottom:104px}
+@media(max-width:520px){.nav .in{gap:10px;padding:10px 12px}.brand{font-size:18px}.wrap{padding:18px 14px 108px}h1{font-size:24px}.tiles{grid-template-columns:1fr}}
 `;
 
 function shell(inner, title) {
@@ -132,12 +146,23 @@ function todaySection(pages, clientName) {
   h += `</div>`; return h;
 }
 
-function tourSection(pages, clientSlug) {
+function tourSection(pages, clientSlug, fb) {
   const tour = firstItinerary(pages); if (!tour) return '';
   const c = tour.c; const it = (c.itinerary || []).filter(s => s.address);
-  let h = `<div data-sec="tour" hidden><h1>Tour ${esc(c.tourDate || '')}</h1><p class="sub">${it.length} home${it.length === 1 ? '' : 's'} on your route.</p>`;
-  h += `<div class="card" style="margin-top:16px">` + it.map((s, i) => `<div class="stop"><div class="t">${esc(s.time || ('Stop ' + (i + 1)))}</div><div><div style="font-weight:600">${esc(s.address)}</div>${s.note ? `<div style="color:var(--muted);font-size:14px">${esc(s.note)}</div>` : ''}</div></div>`).join('');
-  h += calLinks(c, clientSlug, SLUG_BY_TYPE[tour.page.page_type] || 'buyer') + `</div></div>`; return h;
+  let h = `<div data-sec="tour" hidden><h1>Tour ${esc(c.tourDate || '')}</h1><p class="sub">${it.length} home${it.length === 1 ? '' : 's'} on your route \u2014 rate each as you go.</p>`;
+  h += `<div class="card" style="margin-top:14px"><span class="klabel">Add the day to your calendar</span>` + calLinks(c, clientSlug, SLUG_BY_TYPE[tour.page.page_type] || 'buyer') + `</div>`;
+  it.forEach((s, i) => {
+    const lid = s.id || s.address; const f = (fb && fb[lid]) || {};
+    h += `<div class="prop"><div class="addr">${esc(s.address)}</div>${s.time ? `<div style="color:var(--muted);font-size:13px">${esc(s.time)}</div>` : ''}` +
+      (s.note ? `<div style="color:var(--muted);font-size:14px;margin-top:6px">${esc(s.note)}</div>` : '') +
+      `<div class="react" data-listing="${esc(lid)}" data-address="${esc(s.address)}">` +
+        `<button data-r="love" class="${f.reaction === 'love' ? 'on' : ''}">\u2661 Love</button>` +
+        `<button data-r="maybe" class="${f.reaction === 'maybe' ? 'on' : ''}">\u25D0 Maybe</button>` +
+        `<button data-r="pass" class="${f.reaction === 'pass' ? 'on' : ''}">\u2715 Pass</button>` +
+      `</div>` +
+      `<textarea class="lnote" data-listing="${esc(lid)}" data-address="${esc(s.address)}" placeholder="Your notes on this home...">${esc(f.note || '')}</textarea></div>`;
+  });
+  h += `</div>`; return h;
 }
 
 function messagesSection(agentName) {
@@ -155,7 +180,7 @@ function settingsSection() {
     `<div style="margin-top:12px"><button class="btn" type="submit">Save</button><span class="status" id="pStatus"></span></div></form></div></div>`;
 }
 
-function renderApp(pages, clientSlug, openTab) {
+function renderApp(pages, clientSlug, openTab, fb) {
   const clientName = (pages[0] && pages[0].client_name) || 'there';
   const agent = (pages[0] && pages[0].content && pages[0].content.agent) || {};
   const cid = (pages[0] && pages[0].client_id) || '';
@@ -168,23 +193,35 @@ function renderApp(pages, clientSlug, openTab) {
   let body = `<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   body += todaySection(pages, clientName);
   pages.forEach((p, i) => { body += pageSection(p, false); });
-  body += tourSection(pages, clientSlug);
+  body += tourSection(pages, clientSlug, fb || {});
   body += messagesSection(agent.name);
   body += settingsSection();
   body += `<div class="foot">${esc(agent.name || '')}${agent.phone ? ' · ' + esc(agent.phone) : ''}<br><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span></div>`;
   body += `</div>`;
+  const tel = (agent.phone || '').replace(/\D/g, '');
+  const telFmt = tel.length === 10 ? ('+1' + tel) : (tel.length === 11 && tel[0] === '1' ? ('+' + tel) : ('+' + tel));
+  const fn = esc((agent.name || 'your agent').split(' ')[0]);
+  if (tel.length >= 10) body += `<div class="contactbar"><a class="call" href="tel:${telFmt}">Call ${fn}</a><a class="text" href="sms:${telFmt}">Text ${fn}</a></div>`;
   // script
   body += `<script>var SB=${JSON.stringify(SB)},ANON=${JSON.stringify(ANON)},CID=${JSON.stringify(cid)},CSLUG=${JSON.stringify(clientSlug)},OPEN=${JSON.stringify(openTab || 'today')};` +
     `(function(){function show(id){var s=document.querySelectorAll('[data-sec]');for(var i=0;i<s.length;i++){s[i].hidden=s[i].getAttribute('data-sec')!==id;}var t=document.querySelectorAll('[data-tab]');for(var j=0;j<t.length;j++){t[j].classList.toggle('active',t[j].getAttribute('data-tab')===id);}try{history.replaceState(null,'','#'+id);}catch(e){}window.scrollTo(0,0);}` +
     `document.addEventListener('click',function(e){var el=e.target.closest?e.target.closest('[data-tab],[data-go],[data-acc]'):null;if(!el)return;if(el.hasAttribute('data-tab')){e.preventDefault();show(el.getAttribute('data-tab'));}else if(el.hasAttribute('data-go')){e.preventDefault();show(el.getAttribute('data-go'));}else if(el.hasAttribute('data-acc')){var b=el.nextElementSibling;if(b)b.hidden=!b.hidden;el.classList.toggle('open');}});` +
     `var init=(location.hash||'').replace('#','')||OPEN;if(!document.querySelector('[data-sec="'+init+'"]'))init='today';show(init);` +
-    `var H={apikey:ANON,Authorization:"Bearer "+ANON,"Content-Type":"application/json"};` +
+    `var H={apikey:ANON,Authorization:"Bearer "+ANON,"Content-Type":"application/json"};function UF(l,a,patch){var b=Object.assign({client_id:CID||null,client_slug:CSLUG,listing_id:l,address:a,updated_at:new Date().toISOString()},patch);return fetch(SB+"/rest/v1/client_listing_feedback?on_conflict=client_id,listing_id",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},H),body:JSON.stringify(b)});}document.addEventListener("click",function(e){var rb=e.target.closest?e.target.closest(".react button"):null;if(!rb)return;var box=rb.parentNode;var bs=box.querySelectorAll("button");for(var i=0;i<bs.length;i++)bs[i].classList.remove("on");rb.classList.add("on");UF(box.getAttribute("data-listing"),box.getAttribute("data-address"),{reaction:rb.getAttribute("data-r")});});document.addEventListener("blur",function(e){var ta=e.target;if(ta&&ta.classList&&ta.classList.contains("lnote")){UF(ta.getAttribute("data-listing"),ta.getAttribute("data-address"),{note:(ta.value||"").slice(0,1000)});}},true);` +
     `var nf=document.getElementById("noteForm");if(nf)nf.addEventListener("submit",function(e){e.preventDefault();var b=(document.getElementById("nBody").value||"").slice(0,2000);if(!b.trim())return;var st=document.getElementById("nStatus");st.textContent="Sending...";fetch(SB+"/rest/v1/client_messages",{method:"POST",headers:H,body:JSON.stringify({client_id:CID||null,client_slug:CSLUG,from_name:(document.getElementById("nName").value||"").slice(0,80),body:b})}).then(function(r){if(r.ok){st.textContent="Sent ✓";document.getElementById("nBody").value="";}else{st.textContent="Try again.";}}).catch(function(){st.textContent="Try again.";});});` +
     `var pf=document.getElementById("prefForm");if(pf)pf.addEventListener("submit",function(e){e.preventDefault();var st=document.getElementById("pStatus");st.textContent="Saving...";var prefs={notes:document.getElementById("pNotes").checked,updates:document.getElementById("pUpdates").checked,homes:document.getElementById("pHomes").checked};fetch(SB+"/rest/v1/client_prefs",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},H),body:JSON.stringify({client_id:CID||null,email:(document.getElementById("pEmail").value||"").slice(0,120),prefs:prefs,updated_at:new Date().toISOString()})}).then(function(r){st.textContent=r.ok?"Saved ✓":"Try again.";}).catch(function(){st.textContent="Try again.";});});` +
     `var g=document.getElementById("greet");if(g){var hh=new Date().getHours();g.textContent=(hh<12?"Good morning":hh<18?"Good afternoon":"Good evening")+", "+${JSON.stringify(clientName)}+".";}})();</script>`;
   return htmlResp(shell(body, clientName + ' · Jade Real Estate'), 200);
 }
 
+async function fetchFeedback(clientSlug) {
+  try {
+    const r = await fetch(`${SB}/rest/v1/client_listing_feedback?select=listing_id,reaction,note&client_slug=eq.${encodeURIComponent(clientSlug)}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } });
+    const rows = await r.json(); const m = {};
+    (Array.isArray(rows) ? rows : []).forEach(x => { m[x.listing_id] = { reaction: x.reaction, note: x.note }; });
+    return m;
+  } catch (e) { return {}; }
+}
 async function fetchPages(clientSlug) {
   const q = `${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id&client_slug=eq.${encodeURIComponent(clientSlug)}&status=eq.published&order=page_type.asc`;
   const r = await fetch(q, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } });
@@ -209,7 +246,8 @@ export default {
       if (!pages.length) return notFound();
       let openTab = 'today';
       if (parts[1] && TYPE_BY_SLUG[parts[1].toLowerCase()]) openTab = 'p-' + parts[1].toLowerCase();
-      return renderApp(pages, clientSlug, openTab);
+      const fb = await fetchFeedback(clientSlug);
+      return renderApp(pages, clientSlug, openTab, fb);
     } catch (e) { return notFound(); }
   },
 };
