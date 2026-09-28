@@ -7,6 +7,7 @@ const SLUG_BY_TYPE = { buyer_hub: 'buyer', seller_hub: 'seller', listing_present
 const TAB_LABEL = { buyer_hub: 'Your Search', seller_hub: 'Your Sale', listing_presentation: 'Listing', under_contract: 'Closing' };
 function slugOf(p){ return p.page_type==='custom' ? ((p.content&&p.content.slug)||'page') : (SLUG_BY_TYPE[p.page_type]||'page'); }
 function labelOf(p){ return p.page_type==='custom' ? ((p.content&&(p.content.tabLabel||p.content.headline))||'Page') : (TAB_LABEL[p.page_type]||'Page'); }
+function txType(p){ return (p.transactions && p.transactions.type) || (/(seller|listing|under_contract)/.test(p.page_type||'') ? 'seller' : 'buyer'); }
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
 function parseTime(s){ if(!s) return null; const m=String(s).trim().match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)?$/i); if(!m) return null; let h=+m[1]; const min=m[2]?+m[2]:0; const ap=(m[3]||'').toLowerCase(); if(ap==='pm'&&h<12)h+=12; if(ap==='am'&&h===12)h=0; return {h:Math.min(23,h),min:Math.min(59,min)}; }
@@ -24,6 +25,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tab{border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:7px 12px;border-radius:8px;white-space:nowrap;cursor:pointer}
 .tab:hover{background:rgba(166,182,164,.18)}.tab.active{color:var(--jade);background:rgba(51,81,67,.10)}
+.tab-buy::before,.tab-sell::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.tab-buy::before{background:var(--jade)}
+.tab-sell::before{background:var(--gold)}
+.tab-sell.active{color:var(--gold);background:rgba(176,141,87,.12)}
 .wrap{max-width:900px;margin:0 auto;padding:22px 16px 104px}
 h1{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(26px,5vw,38px);margin:0;line-height:1.06}
 h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;color:var(--jade);margin:0}
@@ -229,10 +234,10 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs){
   const allHomes=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const k=(s.address||'').trim().toLowerCase();if(k&&!seen[k]){seen[k]=1;out.push(s);}}));pages.forEach(p=>((p.content&&p.content.homes)||[]).forEach(hh=>{const k=(hh.address||'').trim().toLowerCase();if(k&&!seen[k]){seen[k]=1;out.push(hh);}}));return out;})();
   const sellerPage=pages.find(p=>p.hub_type==='seller'||/seller_hub|listing_presentation|under_contract/.test(p.page_type||'')); const seller=!!sellerPage; const sc=(sellerPage&&sellerPage.content)||{};
   let tabs=`<button class="tab" data-tab="today">Today</button>`;
-  for(const p of pages)tabs+=`<button class="tab" data-tab="p-${slugOf(p)}">${esc(labelOf(p))}</button>`;
-  if(td)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
-  if(allHomes.length)tabs+=`<button class="tab" data-tab="homes">Homes</button>`;
-  if(seller)tabs+=`<button class="tab" data-tab="activity">Activity</button><button class="tab" data-tab="showings">Showings</button><button class="tab" data-tab="offers">Offers</button>`;
+  for(const p of pages)tabs+=`<button class="tab ${txType(p)==='seller'?'tab-sell':'tab-buy'}" data-tab="p-${slugOf(p)}">${esc(labelOf(p))}</button>`;
+  if(td)tabs+=`<button class="tab tab-buy" data-tab="tour">Tour</button>`;
+  if(allHomes.length)tabs+=`<button class="tab tab-buy" data-tab="homes">Homes</button>`;
+  if(seller)tabs+=`<button class="tab tab-sell" data-tab="activity">Activity</button><button class="tab tab-sell" data-tab="showings">Showings</button><button class="tab tab-sell" data-tab="offers">Offers</button>`;
   if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent">Your Agent</button>`;
   tabs+=`<button class="tab" data-tab="messages">Messages</button><button class="tab" data-tab="settings">Settings</button>`;
   let body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
@@ -288,7 +293,7 @@ setInterval(loadChat,20000);
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
 async function fetchPrefs(cid, email, token){ try{ const r=await fetch(`${SB}/rest/v1/client_prefs?select=prefs&client_id=eq.${cid}&email=eq.${encodeURIComponent(email)}`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); const pr=(Array.isArray(rows)&&rows[0]&&rows[0].prefs)||{}; return pr.visibility||'shared'; }catch(e){ return 'shared'; } }
 async function fetchMsgs(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_messages?select=from_name,from_role,body,created_at&client_id=eq.${cid}&order=created_at.asc`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }catch(e){ return []; } }
-async function fetchPages(clientSlug, token){ const q=`${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id,stage,lender_name,lender_phone&client_slug=eq.${encodeURIComponent(clientSlug)}&status=eq.published&order=page_type.asc`; const r=await fetch(q,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }
+async function fetchPages(clientSlug, token){ const q=`${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id,stage,lender_name,lender_phone,transaction_id,transactions(type,status,visible_to_client)&client_slug=eq.${encodeURIComponent(clientSlug)}&status=eq.published&order=page_type.asc`; const r=await fetch(q,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); if(!Array.isArray(rows))return []; return rows.filter(p=>!p.transactions || p.transactions.visible_to_client!==false); }
 
 function getCookie(req,name){ const c=req.headers.get('cookie')||''; const m=c.match(new RegExp('(?:^|; )'+name+'=([^;]*)')); return m?decodeURIComponent(m[1]):''; }
 async function getUser(token){ if(!token) return null; try{ const r=await fetch(SB+'/auth/v1/user',{headers:{apikey:ANON,Authorization:'Bearer '+token}}); if(!r.ok) return null; return await r.json(); }catch(e){ return null; } }
