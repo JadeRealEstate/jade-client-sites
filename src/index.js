@@ -1,3 +1,5 @@
+import { JADE_STANDARD } from './questionnaires.js';
+import { renderQuestionnairePage } from './questionnaire_form.js';
 // Jade client sites (Cloudflare Worker) — per-client app: Today, published-page tabs,
 // Tour (Love/Maybe/Pass + notes, per rater), ranked homes, Messages, Settings.
 const SB = 'https://fcgarmtbmdsgkcrvmwjv.supabase.co';
@@ -331,9 +333,27 @@ function noAccessResp(){
   +`<div style="margin-top:16px"><a class="btn ghost" href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;">Sign out</a></div></div>`;
   return htmlResp(shell(inner,'Jade Real Estate'),200);
 }
+async function handleQuestionnaire(parts){
+  const agentId=(parts[1]||'').toLowerCase(); const type=(parts[2]||'buyer').toLowerCase();
+  if(!/^[0-9a-f-]{36}$/.test(agentId) || (type!=='buyer'&&type!=='seller')) return notFound();
+  let schema=null, templateId=null;
+  try{
+    const r=await fetch(`${SB}/rest/v1/questionnaire_templates?owner_agent_id=eq.${agentId}&type=eq.${type}&is_active=eq.true&select=id,schema&order=updated_at.desc&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const rows=await r.json(); if(Array.isArray(rows)&&rows[0]&&rows[0].schema&&(rows[0].schema.sections||[]).length){ schema=rows[0].schema; templateId=rows[0].id; }
+  }catch(e){}
+  if(!schema) schema=JADE_STANDARD[type];
+  let agentName='';
+  try{
+    const pr=await fetch(`${SB}/rest/v1/profiles?id=eq.${agentId}&select=full_name`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const prs=await pr.json(); if(Array.isArray(prs)&&prs[0]) agentName=prs[0].full_name||'';
+  }catch(e){}
+  return htmlResp(renderQuestionnairePage({agentId,type,schema,templateId,agentName,sb:SB,anon:ANON}));
+}
+
 export default {
   async fetch(request, env){
     const url=new URL(request.url); const parts=url.pathname.split('/').filter(Boolean);
+    if(parts[0]==='q'){ return await handleQuestionnaire(parts); }
     if(parts.length===0){ if(env.ASSETS){try{const res=await env.ASSETS.fetch(request);if(res&&res.status!==404)return res;}catch(e){}} return notFound(); }
     const clientSlug=decodeURIComponent(parts[0]).toLowerCase();
     const _tok=getCookie(request,'sb_at'); const _user=_tok?await getUser(_tok):null;
