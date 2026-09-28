@@ -41,6 +41,11 @@ h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;c
 .chk{display:flex;gap:9px;align-items:flex-start;margin:8px 0}.chk .m{color:var(--jade);flex:none}.chk.done{opacity:.5;text-decoration:line-through}
 .stepitem{width:100%;text-align:left;background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:6px 0}
 .stepitem:hover .m{color:var(--jade)}
+.tl{margin-top:10px}
+.tlrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.tlrow:last-child{border-bottom:0}
+.tldot{width:9px;height:9px;border-radius:50%;background:var(--jade);flex:none;margin-top:5px}
+.tlmeta{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .acc{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-top:10px;overflow:hidden}
 .acc .h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;font-weight:600}
 .acc .h .c{color:var(--sage);transition:transform .2s}.acc .h.open .c{transform:rotate(45deg)}
@@ -134,11 +139,10 @@ function pageSection(p) {
   const c=p.content||{}; const steps=(c.nextSteps||[]).filter(s=>s&&s.text); const doneN=steps.filter(s=>s.done).length;
   const secs=(c.sections||[]).filter(s=>s&&s.enabled!==false); const nb=c.neighborhoods||[],kd=c.keyDates||[],docs=c.documents||[];
   let h=`<div data-sec="p-${slugOf(p)}" hidden><h1>${esc(c.headline||labelOf(p)||'Your page')}</h1>${c.subhead?`<p class="sub">${esc(c.subhead)}</p>`:''}`;
+  const upd=(c.updates||[]).filter(u=>u&&u.text); const evs=[]; upd.forEach(u=>evs.push({d:u.date||'',k:'Update',t:u.text})); (c.keyDates||[]).forEach(x=>evs.push({d:x.date||'',k:'Date',t:x.label||'Key date'})); (c.tourDays||[]).forEach(x=>{const nn=(x.stops||[]).filter(z=>z&&z.address).length; if(x.date&&nn) evs.push({d:x.date,k:'Tour',t:nn+' home'+(nn===1?'':'s')+' to tour'});}); evs.sort((a,b)=>(b.d||'').localeCompare(a.d||'')); if(evs.length)h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your journey</span><div class="tl">`+evs.map(e=>`<div class="tlrow"><span class="tldot"></span><div><div class="tlmeta">${e.d?esc(fmtDate(e.d)):''} · ${esc(e.k)}</div><div>${esc(e.t)}</div></div></div>`).join('')+`</div></div>`;
   if(steps.length){const pct=Math.round(doneN/steps.length*100);h+=`<div class="card stepcard" style="margin-top:16px"><div class="row"><span class="klabel">Your next steps</span><span class="klabel steptally">${doneN}/${steps.length} done</span></div><div class="bar"><i class="stepfill" style="width:${pct}%"></i></div>`+steps.map((s,si)=>`<button type="button" class="chk stepitem ${s.done?'done':''}" data-stepid="${esc(s.id||('i'+si))}"><span class="m">${s.done?'✓':'○'}</span><span>${esc(s.text)}</span></button>`).join('')+`</div>`;}
   if(nb.length)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Neighborhoods</span><div style="margin-top:6px">${nb.map(n=>`<span class="pill">${esc(n)}</span>`).join('')}</div></div>`;
-  if((c.homes||[]).length)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Homes to consider</span>${(c.homes||[]).map(x=>`<div class="row" style="margin-top:8px"><span>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.address||'Home')}</a>`:esc(x.address||'Home')}</span>${x.note?`<span style="color:var(--muted)">${esc(x.note)}</span>`:''}</div>`).join('')}</div>`;
   if(secs.length)h+=secs.map((s,i)=>`<div class="acc"><div class="h${i===0?' open':''}" data-acc><span>${esc(s.title)}</span><span class="c">+</span></div><div class="b"${i===0?'':' hidden'}>${esc(s.body)}</div></div>`).join('');
-  if(kd.length)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Key dates</span>${kd.map(d=>`<div class="row" style="margin-top:8px"><span>${esc(d.label)}</span><span style="color:var(--muted)">${esc(d.date)}</span></div>`).join('')}</div>`;
   h+=`</div>`; return h;
 }
 function teamRow(name, role, phone){ const tel=(phone||'').replace(/\D/g,''); const t=tel.length===10?'+1'+tel:(tel.length===11&&tel[0]==='1'?'+'+tel:'+'+tel); let h=`<div class="row" style="margin-top:10px"><div><div style="font-weight:600">${esc(name)}</div><div style="color:var(--muted);font-size:13px">${esc(role)}</div></div>`; if(tel.length>=10)h+=`<div style="display:flex;gap:8px"><a class="btn small" href="tel:${t}">Call</a><a class="btn small ghost" href="sms:${t}">Text</a></div>`; return h+`</div>`; }
@@ -161,6 +165,7 @@ function todaySection(pages, clientName, stage, lender){
   if(tour)h+=`<div class="tile" data-go="tour">Tour<div class="k">Rate homes</div></div>`;
   h+=`<div class="tile" data-go="messages">Messages<div class="k">Reach your agent</div></div><div class="tile" data-go="settings">Settings<div class="k">Notifications</div></div></div></div>`; return h;
 }
+function homesSection(allHomes){ let h=`<div data-sec="homes" hidden><h1>Homes</h1><p class="sub">Every home you’ve toured or we’ve added — rate each, and your group’s favorites rise to the top.</p><div style="margin-top:14px">`+allHomes.map(propCard).join('')+`</div></div>`; return h; }
 function tourSection(pages, clientSlug, fb){
   const td=tourDaysOf(pages); if(!td) return ''; const pageSlug=SLUG_BY_TYPE[td.page.page_type]||'buyer';
   const today=todayStr(); const upcoming=td.days.filter(d=>(d.date||'')>=today); const past=td.days.filter(d=>(d.date||'')<today);
@@ -220,11 +225,13 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs){
   const td=tourDaysOf(pages);
   const stage=(pages[0]&&pages[0].stage)||'active';
   const lender={name:(pages[0]&&pages[0].lender_name)||'',phone:(pages[0]&&pages[0].lender_phone)||''};
-  const listings=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const id=s.id||s.address;if(!seen[id]){seen[id]=1;out.push({id,address:s.address});}}));return out;})();
+  const listings=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const id=s.id||s.address;if(!seen[id]){seen[id]=1;out.push({id,address:s.address});}}));pages.forEach(p=>((p.content&&p.content.homes)||[]).forEach(hh=>{const id=hh.id||hh.address;if(id&&!seen[id]){seen[id]=1;out.push({id,address:hh.address});}}));return out;})();
+  const allHomes=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const k=(s.address||'').trim().toLowerCase();if(k&&!seen[k]){seen[k]=1;out.push(s);}}));pages.forEach(p=>((p.content&&p.content.homes)||[]).forEach(hh=>{const k=(hh.address||'').trim().toLowerCase();if(k&&!seen[k]){seen[k]=1;out.push(hh);}}));return out;})();
   const sellerPage=pages.find(p=>p.hub_type==='seller'||/seller_hub|listing_presentation|under_contract/.test(p.page_type||'')); const seller=!!sellerPage; const sc=(sellerPage&&sellerPage.content)||{};
   let tabs=`<button class="tab" data-tab="today">Today</button>`;
   for(const p of pages)tabs+=`<button class="tab" data-tab="p-${slugOf(p)}">${esc(labelOf(p))}</button>`;
   if(td)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
+  if(allHomes.length)tabs+=`<button class="tab" data-tab="homes">Homes</button>`;
   if(seller)tabs+=`<button class="tab" data-tab="activity">Activity</button><button class="tab" data-tab="showings">Showings</button><button class="tab" data-tab="offers">Offers</button>`;
   if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent">Your Agent</button>`;
   tabs+=`<button class="tab" data-tab="messages">Messages</button><button class="tab" data-tab="settings">Settings</button>`;
@@ -232,6 +239,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs){
   body+=todaySection(pages,clientName,stage,lender);
   for(const p of pages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
+  if(allHomes.length)body+=homesSection(allHomes);
   if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
   if(showAgent)body+=agentSection(agent);
   body+=messagesSection(agent.name);
