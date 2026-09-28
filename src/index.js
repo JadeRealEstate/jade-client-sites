@@ -152,6 +152,19 @@ function tourSection(pages, clientSlug, fb){
 function messagesSection(a){return `<div data-sec="messages" hidden><h1>Messages</h1><p class="sub">Send a note or question straight to ${esc(a||'your agent')}.</p><div class="card" style="margin-top:16px"><form id="noteForm"><label class="f" for="nName">Your name</label><input type="text" id="nName" placeholder="Optional"><label class="f" for="nBody">Message</label><textarea id="nBody" placeholder="Loved the yard on Gaylord — can we see it again?"></textarea><div style="margin-top:12px"><button class="btn" type="submit">Send</button><span class="status" id="nStatus"></span></div></form></div></div>`;}
 function settingsSection(){return `<div data-sec="settings" hidden><h1>Settings</h1><p class="sub">Choose what you want emailed. Change it anytime.</p><div class="card" style="margin-top:16px"><form id="prefForm"><label class="f" for="pEmail">Your email</label><input type="email" id="pEmail" placeholder="you@email.com"><label class="opt"><input type="checkbox" id="pNotes" checked> New notes &amp; messages</label><label class="opt"><input type="checkbox" id="pUpdates" checked> Updates on my journey</label><label class="opt"><input type="checkbox" id="pHomes" checked> New homes added</label><div style="margin-top:12px"><button class="btn" type="submit">Save</button><span class="status" id="pStatus"></span></div></form></div></div>`;}
 
+function agentSection(agent){
+  if(!agent||!(agent.name||agent.bio)) return '';
+  const tel=(agent.phone||'').replace(/\D/g,''); const t=tel.length===10?'+1'+tel:(tel.length===11&&tel[0]==='1'?'+'+tel:'+'+tel);
+  const meta=[agent.business,agent.market&&('Serving '+agent.market),agent.years&&(agent.years+(String(agent.years).match(/exp|yr|year/i)?'':' yrs experience'))].filter(Boolean).join(' · ');
+  let h=`<div data-sec="agent" hidden><h1>Your agent</h1><div class="card" style="margin-top:16px"><div class="big" style="font-size:22px">${esc(agent.name||'Your agent')}</div>`;
+  if(meta)h+=`<div style="color:var(--muted);font-size:13px;margin-top:2px">${esc(meta)}</div>`;
+  if(agent.bio)h+=`<p style="margin:10px 0 0">${esc(agent.bio)}</p>`;
+  h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">`;
+  if(tel.length>=10)h+=`<a class="btn small" href="tel:${t}">Call</a><a class="btn small ghost" href="sms:${t}">Text</a>`;
+  if(agent.email)h+=`<a class="btn small ghost" href="mailto:${esc(agent.email)}">Email</a>`;
+  if(agent.website)h+=`<a class="btn small ghost" href="${esc(/^https?:/i.test(agent.website)?agent.website:'https://'+agent.website)}" target="_blank" rel="noreferrer">Website</a>`;
+  h+=`</div></div></div>`; return h;
+}
 function activitySection(sc){
   const ev=[];
   (sc.updates||[]).forEach(u=>ev.push({date:u.date||'',label:'Update',detail:u.text||''}));
@@ -179,7 +192,8 @@ function offersSection(sc){
 }
 function renderApp(pages, clientSlug, openTab, fb){
   const clientName=(pages[0]&&pages[0].client_name)||'there';
-  const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{};
+  const agent=(pages.find(p=>p.content&&p.content.agent)||{content:{}}).content.agent||{};
+  const showAgent=!pages.some(p=>p.content&&p.content.showAgent===false);
   const cid=(pages[0]&&pages[0].client_id)||'';
   const td=tourDaysOf(pages);
   const stage=(pages[0]&&pages[0].stage)||'active';
@@ -190,12 +204,14 @@ function renderApp(pages, clientSlug, openTab, fb){
   for(const p of pages)tabs+=`<button class="tab" data-tab="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}</button>`;
   if(td)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
   if(seller)tabs+=`<button class="tab" data-tab="activity">Activity</button><button class="tab" data-tab="showings">Showings</button><button class="tab" data-tab="offers">Offers</button>`;
+  if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent">Your Agent</button>`;
   tabs+=`<button class="tab" data-tab="messages">Messages</button><button class="tab" data-tab="settings">Settings</button>`;
   let body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   body+=todaySection(pages,clientName,stage,lender);
   for(const p of pages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
   if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
+  if(showAgent)body+=agentSection(agent);
   body+=messagesSection(agent.name);
   body+=settingsSection();
   body+=`<div class="foot">${esc(agent.name||'')}${agent.phone?' · '+esc(agent.phone):''}<br><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span><br><a href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;" style="color:var(--muted);font-size:12px;display:inline-block;margin-top:6px">Sign out</a></div></div>`;
