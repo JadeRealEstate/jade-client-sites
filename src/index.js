@@ -1,7 +1,846 @@
-import { JADE_STANDARD } from './questionnaires.js';
-import { renderQuestionnairePage } from './questionnaire_form.js';
 // Jade client sites (Cloudflare Worker) — per-client app: Today, published-page tabs,
 // Tour (Love/Maybe/Pass + notes, per rater), ranked homes, Messages, Settings.
+/* ===== Questionnaire (inlined; single-file worker) ===== */
+// AUTO-GENERATED — Jade Standard questionnaire templates (buyer + seller).
+// Edit the generator, not this file. Shared by the agent app and the hub Worker.
+const JADE_STANDARD = {
+  "buyer": {
+    "sections": [
+      {
+        "title": "Let's start with the basics",
+        "desc": "Before we get started, I'd love to learn a little more about you, your goals, and what you're looking for in a home. This helps me better understand your timeline, priorities, budget, and anything that may make the process smoother for you.",
+        "questions": [
+          {
+            "id": "name",
+            "label": "Your name",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "phone",
+            "label": "Your phone number",
+            "type": "tel",
+            "required": true
+          },
+          {
+            "id": "email",
+            "label": "Your email address",
+            "type": "email",
+            "required": true
+          },
+          {
+            "id": "comm",
+            "label": "Preferred way to communicate",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Call",
+              "Text",
+              "Email"
+            ]
+          },
+          {
+            "id": "besttime",
+            "label": "Best time to reach you",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Morning",
+              "Afternoon",
+              "Evening",
+              "Anytime"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Your Current Situation",
+        "desc": "A few questions about where you are now, your timeline, and whether there are any moving pieces we should plan around.",
+        "questions": [
+          {
+            "id": "livingSituation",
+            "label": "Are you currently renting, owning, or living with family/friends?",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Renting",
+              "Owning",
+              "Living with family/friends"
+            ]
+          },
+          {
+            "id": "moveTiming",
+            "label": "When does your lease end, or when would you ideally like to move?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "needToSell",
+            "label": "Do you need to sell a home before buying?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No",
+              "Not sure"
+            ]
+          },
+          {
+            "id": "decisionMakers",
+            "label": "Will anyone else be part of the decision-making process?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "workingWithLender",
+            "label": "Are you working with a lender yet?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No"
+            ]
+          },
+          {
+            "id": "preapproved",
+            "label": "Have you been pre-approved?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No",
+              "In progress"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Budget & Financing",
+        "desc": "This helps me understand your price range, monthly payment goals, and where you are in the lending/pre-approval process.",
+        "questions": [
+          {
+            "id": "priceRange",
+            "label": "What price range are you hoping to stay within?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "monthlyPayment",
+            "label": "Do you have a monthly payment goal?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "downPayment",
+            "label": "How much are you planning to put down, if known?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "financialConcerns",
+            "label": "Are there any financial concerns you want me to be aware of?",
+            "type": "textarea",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Home Search Preferences",
+        "desc": "Tell me what you're looking for in a home, including location, layout, must-haves, nice-to-haves, and dealbreakers.",
+        "questions": [
+          {
+            "id": "areas",
+            "label": "What areas or neighborhoods are you interested in?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "avoidAreas",
+            "label": "Are there any areas you want to avoid?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "beds",
+            "label": "Ideal number of bedrooms",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Studio",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5+"
+            ],
+            "allowOther": true
+          },
+          {
+            "id": "baths",
+            "label": "Ideal number of bathrooms",
+            "type": "select",
+            "required": true,
+            "options": [
+              "1",
+              "1.5",
+              "2",
+              "2.5",
+              "3+"
+            ],
+            "allowOther": true
+          },
+          {
+            "id": "optionsVolume",
+            "label": "Do you like to see a lot of options, or only the strongest matches?",
+            "type": "select",
+            "required": true,
+            "options": [
+              "I like to see a lot of options",
+              "Only the strongest matches"
+            ]
+          },
+          {
+            "id": "homeTypes",
+            "label": "What kind of home do you want to look at? (Check all that apply)",
+            "type": "checkbox",
+            "required": true,
+            "options": [
+              "Single-family",
+              "Townhome",
+              "Condo",
+              "Multi-family",
+              "Land / lot",
+              "New construction"
+            ],
+            "allowOther": true
+          },
+          {
+            "id": "openToUpdates",
+            "label": "Are you open to cosmetic updates?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No",
+              "Depends"
+            ]
+          },
+          {
+            "id": "mustHaves",
+            "label": "Must-haves",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "niceToHaves",
+            "label": "Nice-to-haves",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "dealbreakers",
+            "label": "Dealbreakers",
+            "type": "textarea",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Lifestyle & Priorities",
+        "desc": "A home is more than the number of bedrooms and bathrooms. This section helps me understand what matters most in your day-to-day life.",
+        "questions": [
+          {
+            "id": "proximity",
+            "label": "Do you need to be close to work, school, family, parks, restaurants, trails, etc.?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "pets",
+            "label": "Do you have pets we should keep in mind?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "theOne",
+            "label": "What would make a home feel like “the one” to you?",
+            "type": "textarea",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Timeline & Motivation",
+        "desc": "This helps me understand how quickly you'd like to move and what is driving the search.",
+        "questions": [
+          {
+            "id": "buyTimeline",
+            "label": "Are you looking to buy:",
+            "type": "select",
+            "required": true,
+            "options": [
+              "As soon as possible",
+              "1–3 months",
+              "3–6 months",
+              "6–12 months",
+              "Just exploring for now"
+            ]
+          },
+          {
+            "id": "drivingMove",
+            "label": "What is driving the move?",
+            "type": "textarea",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Final Questions",
+        "desc": "Optional — the fun stuff.",
+        "questions": [
+          {
+            "id": "coffeeOrder",
+            "label": "What's your coffee order, drink order, or favorite little treat?",
+            "type": "text",
+            "required": false
+          },
+          {
+            "id": "anythingElse",
+            "label": "Is there anything you want me to know that would make this process easier, smoother, or more personal for you?",
+            "type": "textarea",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  "seller": {
+    "sections": [
+      {
+        "title": "Let's start with the basics",
+        "desc": "Before we get started, I'd love to learn a little more about you and your goals. This helps me better understand your timeline, priorities, and anything that may make the process smoother for you.",
+        "questions": [
+          {
+            "id": "name",
+            "label": "Your name",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "phone",
+            "label": "Your phone number",
+            "type": "tel",
+            "required": true
+          },
+          {
+            "id": "email",
+            "label": "Your email address",
+            "type": "email",
+            "required": true
+          },
+          {
+            "id": "address",
+            "label": "Your property address",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "comm",
+            "label": "Preferred way to communicate",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Call",
+              "Text",
+              "Email"
+            ]
+          },
+          {
+            "id": "besttime",
+            "label": "Best time to reach you",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Morning",
+              "Afternoon",
+              "Evening",
+              "Anytime"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Ownership & Mortgage Details",
+        "desc": "This helps me understand what may need to be factored into your sale, including mortgage balance, title, HOA, or any other known obligations.",
+        "questions": [
+          {
+            "id": "hasMortgage",
+            "label": "Do you currently have a mortgage on the property?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No"
+            ]
+          },
+          {
+            "id": "oweAmount",
+            "label": "About how much do you owe, if known?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "otherLiens",
+            "label": "Are there any other liens, loans, or HOA balances we should know about?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "othersOnTitle",
+            "label": "Is anyone else on title?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "allOwnersInvolved",
+            "label": "Will all owners be involved in the sale decision?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Your Selling Goals",
+        "desc": "Tell me why you're thinking about selling, what you're hoping to accomplish, and what timing looks like for you.",
+        "questions": [
+          {
+            "id": "whySelling",
+            "label": "Why are you thinking about selling?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "sellByDate",
+            "label": "Are you hoping to sell by a certain date?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "nextHome",
+            "label": "Do you already have your next home or plan figured out?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "buySellOrder",
+            "label": "Do you need to buy before you sell, sell before you buy, or are you flexible?",
+            "type": "select",
+            "required": false,
+            "options": [
+              "Buy before I sell",
+              "Sell before I buy",
+              "Flexible"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Pricing Expectations",
+        "desc": "This helps me understand your ideal outcome, whether you have a price in mind, and what you may need to net from the sale.",
+        "questions": [
+          {
+            "id": "priceInMind",
+            "label": "Do you have a price in mind?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "howArrived",
+            "label": "How did you come up with that number?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "needToNet",
+            "label": "Is there a specific amount you need to walk away with?",
+            "type": "text",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Property Details",
+        "desc": "A few details about the home, including property type and general features.",
+        "questions": [
+          {
+            "id": "beds",
+            "label": "Bedrooms",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Studio",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6+"
+            ],
+            "allowOther": true
+          },
+          {
+            "id": "baths",
+            "label": "Bathrooms",
+            "type": "select",
+            "required": true,
+            "options": [
+              "1",
+              "1.5",
+              "2",
+              "2.5",
+              "3",
+              "3.5",
+              "4+"
+            ],
+            "allowOther": true
+          },
+          {
+            "id": "sqft",
+            "label": "Finished square footage, if known",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "lot",
+            "label": "Lot size, if known",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "yearBuilt",
+            "label": "Year built, if known",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "hoa",
+            "label": "Monthly HOA amount, if applicable",
+            "type": "text",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Home Condition & Updates",
+        "desc": "Share any updates, repairs, improvements, or known issues so we can talk through preparation and positioning.",
+        "questions": [
+          {
+            "id": "updates",
+            "label": "What updates have you made to the home?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "majorIssues",
+            "label": "Are there any major repairs or issues we should know about?",
+            "type": "textarea",
+            "required": true
+          },
+          {
+            "id": "roofAge",
+            "label": "Age of roof, if known",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "hvacAge",
+            "label": "Age of HVAC, if known",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "waterHeaterAge",
+            "label": "Age of water heater, if known",
+            "type": "text",
+            "required": true
+          },
+          {
+            "id": "claimsPermits",
+            "label": "Any insurance claims, permits, or past inspection items?",
+            "type": "textarea",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "What You Love About the Home",
+        "desc": "Share what you love about the home and neighborhood, and any details that should be highlighted in marketing.",
+        "questions": [
+          {
+            "id": "fellInLove",
+            "label": "What made you fall in love with the home when you bought it?",
+            "type": "textarea",
+            "required": false
+          },
+          {
+            "id": "favFeatures",
+            "label": "What are your favorite features?",
+            "type": "textarea",
+            "required": false
+          },
+          {
+            "id": "compliments",
+            "label": "What do neighbors or guests usually compliment?",
+            "type": "textarea",
+            "required": false
+          },
+          {
+            "id": "loveNeighborhood",
+            "label": "What do you love about the neighborhood?",
+            "type": "textarea",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Showing & Prep Preferences",
+        "desc": "This helps me understand your comfort level with showings, repairs, staging, and overall listing prep.",
+        "questions": [
+          {
+            "id": "staging",
+            "label": "Are you open to staging recommendations?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No",
+              "Open to discussing"
+            ]
+          },
+          {
+            "id": "smallRepairs",
+            "label": "Are you willing to do small repairs or touch-ups before listing?",
+            "type": "radio",
+            "required": true,
+            "options": [
+              "Yes",
+              "No",
+              "Maybe"
+            ]
+          },
+          {
+            "id": "prepLevel",
+            "label": "Do you prefer minimal prep, full prep, or somewhere in between?",
+            "type": "select",
+            "required": true,
+            "options": [
+              "Minimal prep",
+              "Somewhere in between",
+              "Full prep"
+            ]
+          },
+          {
+            "id": "schedules",
+            "label": "Are there pets, kids, tenants, or schedules we need to work around for showings?",
+            "type": "textarea",
+            "required": true
+          }
+        ]
+      },
+      {
+        "title": "Marketing Angle",
+        "desc": "Optional — anything you'd love to see highlighted.",
+        "questions": [
+          {
+            "id": "highlights",
+            "label": "Are there any features, upgrades, views, neighborhood perks, or lifestyle details you want highlighted?",
+            "type": "textarea",
+            "required": false
+          },
+          {
+            "id": "localSpots",
+            "label": "Favorite local spots nearby? Coffee shops, parks, restaurants, trails, schools, etc.",
+            "type": "textarea",
+            "required": false
+          }
+        ]
+      },
+      {
+        "title": "Final Questions",
+        "desc": "Optional — the fun stuff.",
+        "questions": [
+          {
+            "id": "coffeeOrder",
+            "label": "What's your coffee order, drink order, or favorite little treat?",
+            "type": "text",
+            "required": false
+          },
+          {
+            "id": "anythingElse",
+            "label": "Is there anything about the sale that feels stressful, exciting, or important for us to know upfront?",
+            "type": "textarea",
+            "required": false
+          }
+        ]
+      }
+    ]
+  }
+};
+
+// Public questionnaire form (buyer/seller) rendered by the hub Worker.
+// Client fills it via a shareable link; answers POST straight into questionnaire_responses.
+const escH = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function field(q) {
+  const req = q.required ? ' required' : '';
+  const nm = 'q_' + q.id;
+  const star = q.required ? ' <span class="req">*</span>' : '';
+  let inner = '';
+  if (q.type === 'textarea') {
+    inner = `<textarea class="in" name="${nm}" data-qid="${escH(q.id)}"${req} rows="3" placeholder="${escH(q.placeholder||'')}"></textarea>`;
+  } else if (q.type === 'select') {
+    const opts = (q.options||[]).map(o => `<option value="${escH(o)}">${escH(o)}</option>`).join('');
+    const other = q.allowOther ? `<option value="Other">Other…</option>` : '';
+    inner = `<select class="in" name="${nm}" data-qid="${escH(q.id)}"${req}><option value="" disabled selected>Choose one…</option>${opts}${other}</select>`;
+    if (q.allowOther) inner += `<input class="in otherbox" name="${nm}__other" data-other="${escH(q.id)}" placeholder="Tell us more" style="display:none;margin-top:8px">`;
+  } else if (q.type === 'radio') {
+    inner = `<div class="opts" data-qid="${escH(q.id)}" data-req="${q.required?1:0}">` + (q.options||[]).map((o,i) =>
+      `<label class="opt"><input type="radio" name="${nm}" value="${escH(o)}"${q.required&&i===0?'':''}> <span>${escH(o)}</span></label>`).join('') + `</div>`;
+  } else if (q.type === 'checkbox') {
+    inner = `<div class="opts" data-qid="${escH(q.id)}" data-req="${q.required?1:0}" data-multi="1">` + (q.options||[]).map(o =>
+      `<label class="opt"><input type="checkbox" name="${nm}" value="${escH(o)}"> <span>${escH(o)}</span></label>`).join('');
+    if (q.allowOther) inner += `<label class="opt"><input type="checkbox" name="${nm}" value="Other"> <span>Other</span></label><input class="in otherbox" name="${nm}__other" data-other="${escH(q.id)}" placeholder="Tell us more" style="display:none;margin-top:8px">`;
+    inner += `</div>`;
+  } else {
+    const t = q.type === 'email' ? 'email' : q.type === 'tel' ? 'tel' : 'text';
+    inner = `<input class="in" type="${t}" name="${nm}" data-qid="${escH(q.id)}"${req} placeholder="${escH(q.placeholder||'')}">`;
+  }
+  return `<div class="q"><label class="qlab">${escH(q.label)}${star}</label>${inner}</div>`;
+}
+
+function section(sec, i, total) {
+  const qs = (sec.questions||[]).map(field).join('');
+  return `<div class="sec" data-sec="${i}"${i===0?'':' hidden'}>
+    <div class="secmeta">Section ${i+1} of ${total}</div>
+    <h2>${escH(sec.title)}</h2>
+    ${sec.desc?`<p class="secdesc">${escH(sec.desc)}</p>`:''}
+    ${qs}
+  </div>`;
+}
+
+function renderQuestionnairePage(opts) {
+  const { agentId, type, schema, templateId, agentName, sb, anon } = opts;
+  const secs = (schema && schema.sections) || [];
+  const total = secs.length;
+  const heading = type === 'seller' ? 'Seller Questionnaire' : 'Buyer Questionnaire';
+  const who = agentName ? `${escH(agentName)} · Jade Real Estate` : 'Jade Real Estate';
+  const body = secs.map((s,i)=>section(s,i,total)).join('');
+  const schemaJson = JSON.stringify(schema).replace(/</g,'\\u003c');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escH(heading)} · Jade Real Estate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--jade:#335143;--jade2:#546751;--olive:#3e5725;--sage:#a6b6a4;--cream:#f2efeb;--ink:#15201a;--forest:#1b2f25;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:Montserrat,system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding:24px 16px 64px}
+.brand{display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0 18px}
+.brand .mark{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:22px;color:var(--jade)}
+.brand .who{font-size:12px;color:var(--jade2)}
+.card{background:var(--white);border:1px solid rgba(166,182,164,.5);border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(21,32,26,.06)}
+.prog{height:6px;background:var(--cream);border-radius:99px;overflow:hidden;margin-bottom:18px}
+.prog > i{display:block;height:100%;background:var(--jade);width:0;transition:width .25s}
+.secmeta{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--jade2);font-weight:600}
+h2{font-family:'DM Serif Display',Georgia,serif;font-size:24px;color:var(--jade);margin:6px 0 4px;font-weight:400}
+.secdesc{color:var(--ink);opacity:.72;font-size:14px;margin:0 0 14px}
+.q{margin:14px 0}
+.qlab{display:block;font-size:14px;font-weight:600;color:var(--forest);margin-bottom:6px}
+.req{color:#b0563f}
+.in{width:100%;padding:11px 12px;border:1px solid rgba(166,182,164,.7);border-radius:12px;font:inherit;color:var(--ink);background:#fff}
+.in:focus{outline:none;border-color:var(--jade);box-shadow:0 0 0 3px rgba(51,81,67,.12)}
+textarea.in{resize:vertical}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(166,182,164,.6);border-radius:12px;cursor:pointer;font-size:14px}
+.opt:has(input:checked){border-color:var(--jade);background:rgba(51,81,67,.06)}
+.opt input{accent-color:var(--jade);width:17px;height:17px}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+.btn{border:none;border-radius:12px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer}
+.btn.prim{background:var(--jade);color:#fff}
+.btn.prim:hover{background:var(--forest)}
+.btn.ghost{background:transparent;color:var(--jade);border:1px solid rgba(166,182,164,.7)}
+.btn:disabled{opacity:.5;cursor:default}
+.err{color:#b0563f;font-size:13px;margin-top:10px;min-height:16px}
+.miss{border-color:#b0563f!important}
+.done{text-align:center;padding:26px 8px}
+.done .big{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:30px;color:var(--jade);margin-bottom:8px}
+.done p{color:var(--ink);opacity:.75}
+.foot{text-align:center;font-size:11px;color:var(--jade2);margin-top:18px}
+</style></head>
+<body><div class="wrap">
+<div class="brand"><span class="mark">Jade</span><span class="who">${who}</span></div>
+<div class="card">
+  <div class="prog"><i id="bar"></i></div>
+  <form id="qform" autocomplete="on">
+    ${body}
+    <div class="err" id="err"></div>
+    <div class="nav">
+      <button type="button" class="btn ghost" id="back" style="visibility:hidden">Back</button>
+      <button type="button" class="btn prim" id="next">Next</button>
+      <button type="submit" class="btn prim" id="submit" style="display:none">Submit</button>
+    </div>
+  </form>
+  <div class="done" id="done" hidden><div class="big">Thank you!</div><p>Your answers are on their way to your agent. They'll be in touch soon.</p></div>
+</div>
+<div class="foot">Powered by Jade Real Estate</div>
+</div>
+<script>
+(function(){
+  var SB=${JSON.stringify(sb)},ANON=${JSON.stringify(anon)},AGENT=${JSON.stringify(agentId)},TYPE=${JSON.stringify(type)},TPL=${JSON.stringify(templateId||null)};
+  var SCHEMA=${schemaJson};var SECS=SCHEMA.sections||[];var cur=0;var total=SECS.length;
+  var form=document.getElementById('qform'),bar=document.getElementById('bar'),errEl=document.getElementById('err');
+  var back=document.getElementById('back'),next=document.getElementById('next'),submit=document.getElementById('submit');
+  function panels(){return form.querySelectorAll('.sec');}
+  function show(i){panels().forEach(function(p){p.hidden=(+p.dataset.sec)!==i;});bar.style.width=Math.round(((i)/(total))*100)+'%';back.style.visibility=i===0?'hidden':'visible';var last=i===total-1;next.style.display=last?'none':'';submit.style.display=last?'':'none';errEl.textContent='';window.scrollTo({top:0,behavior:'smooth'});}
+  function curPanel(){return form.querySelector('.sec[data-sec="'+cur+'"]');}
+  function validate(panel){var ok=true;errEl.textContent='';
+    panel.querySelectorAll('.in[required]').forEach(function(el){el.classList.remove('miss');if(!el.value.trim()){ok=false;el.classList.add('miss');}});
+    panel.querySelectorAll('.opts[data-req="1"]').forEach(function(g){g.classList.remove('miss');var checked=g.querySelectorAll('input:checked').length;if(!checked){ok=false;g.classList.add('miss');}});
+    if(!ok)errEl.textContent='Please fill in the starred questions to continue.';return ok;}
+  // reveal "Other" text boxes
+  form.addEventListener('change',function(e){var t=e.target;
+    if(t.tagName==='SELECT'){var ob=form.querySelector('input[data-other="'+(t.dataset.qid||'')+'"]');if(ob)ob.style.display=(t.value==='Other')?'block':'none';}
+    if(t.type==='checkbox'&&t.value==='Other'){var g=t.closest('.opts');var ob2=form.querySelector('input[data-other="'+(g&&g.dataset.qid||'')+'"]');if(ob2)ob2.style.display=t.checked?'block':'none';}
+  });
+  next.addEventListener('click',function(){if(!validate(curPanel()))return;if(cur<total-1){cur++;show(cur);}});
+  back.addEventListener('click',function(){if(cur>0){cur--;show(cur);}});
+  function collect(){var ans={},contact={};
+    SECS.forEach(function(sec){(sec.questions||[]).forEach(function(q){var val='';
+      if(q.type==='checkbox'){var g=form.querySelector('.opts[data-qid="'+q.id+'"]');var arr=[];if(g)g.querySelectorAll('input:checked').forEach(function(c){arr.push(c.value);});var ob=form.querySelector('input[data-other="'+q.id+'"]');if(ob&&ob.value.trim()){arr=arr.filter(function(x){return x!=='Other';});arr.push(ob.value.trim());}val=arr.join(', ');}
+      else if(q.type==='radio'){var g2=form.querySelector('.opts[data-qid="'+q.id+'"]');var c2=g2&&g2.querySelector('input:checked');val=c2?c2.value:'';}
+      else{var el=form.querySelector('[name="q_'+q.id+'"]');val=el?el.value.trim():'';if(q.allowOther&&val==='Other'){var ob2=form.querySelector('input[data-other="'+q.id+'"]');if(ob2&&ob2.value.trim())val=ob2.value.trim();}}
+      if(val)ans[q.id]={label:q.label,value:val};
+      if(q.id==='name')contact.contact_name=val;if(q.id==='email')contact.contact_email=val;if(q.id==='phone')contact.contact_phone=val;if(q.id==='address')contact.contact_address=val;
+    });});
+    return {answers:ans,contact:contact};}
+  form.addEventListener('submit',function(e){e.preventDefault();if(!validate(curPanel()))return;submit.disabled=true;submit.textContent='Sending…';
+    var c=collect();var row=Object.assign({agent_id:AGENT,type:TYPE,template_id:TPL,answers:c.answers},c.contact);
+    fetch(SB+'/rest/v1/questionnaire_responses',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(row)})
+    .then(function(r){if(!r.ok)throw new Error('save');document.querySelector('.prog').style.display='none';form.style.display='none';document.getElementById('done').hidden=false;bar.style.width='100%';window.scrollTo({top:0,behavior:'smooth'});})
+    .catch(function(){submit.disabled=false;submit.textContent='Submit';errEl.textContent='Something went wrong sending your answers. Please try again.';});
+  });
+  show(0);
+})();
+</script>
+</body></html>`;
+}
+/* ===== end questionnaire ===== */
+
 const SB = 'https://fcgarmtbmdsgkcrvmwjv.supabase.co';
 const ANON = 'sb_publishable_k5AzjS458cQ5CRzgZP_jbg_zTe3tQyx';
 const TYPE_BY_SLUG = { buyer: 'buyer_hub', seller: 'seller_hub', listing: 'listing_presentation', closing: 'under_contract' };
