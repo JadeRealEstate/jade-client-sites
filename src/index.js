@@ -152,6 +152,31 @@ function tourSection(pages, clientSlug, fb){
 function messagesSection(a){return `<div data-sec="messages" hidden><h1>Messages</h1><p class="sub">Send a note or question straight to ${esc(a||'your agent')}.</p><div class="card" style="margin-top:16px"><form id="noteForm"><label class="f" for="nName">Your name</label><input type="text" id="nName" placeholder="Optional"><label class="f" for="nBody">Message</label><textarea id="nBody" placeholder="Loved the yard on Gaylord — can we see it again?"></textarea><div style="margin-top:12px"><button class="btn" type="submit">Send</button><span class="status" id="nStatus"></span></div></form></div></div>`;}
 function settingsSection(){return `<div data-sec="settings" hidden><h1>Settings</h1><p class="sub">Choose what you want emailed. Change it anytime.</p><div class="card" style="margin-top:16px"><form id="prefForm"><label class="f" for="pEmail">Your email</label><input type="email" id="pEmail" placeholder="you@email.com"><label class="opt"><input type="checkbox" id="pNotes" checked> New notes &amp; messages</label><label class="opt"><input type="checkbox" id="pUpdates" checked> Updates on my journey</label><label class="opt"><input type="checkbox" id="pHomes" checked> New homes added</label><div style="margin-top:12px"><button class="btn" type="submit">Save</button><span class="status" id="pStatus"></span></div></form></div></div>`;}
 
+function activitySection(sc){
+  const ev=[];
+  (sc.updates||[]).forEach(u=>ev.push({date:u.date||'',label:'Update',detail:u.text||''}));
+  (sc.offers||[]).forEach(o=>ev.push({date:o.by||o.date||'',label:'Offer received',detail:(o.amount||'')+(o.terms?(' · '+o.terms):'')}));
+  (sc.showings||[]).forEach(x=>ev.push({date:'',when:x.when||'',label:x.feedback?'Showing feedback':'Showing',detail:x.note||''}));
+  (sc.keyDates||[]).forEach(d=>ev.push({date:d.date||'',label:d.label||'Milestone',detail:''}));
+  let h=`<div data-sec="activity" hidden><h1>Activity</h1>`;
+  if(!ev.length){ return h+`<p class="sub">Your listing’s story will build here — showings, feedback, price changes, and offers.</p></div>`; }
+  ev.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  h+=`<p class="sub">Everything happening with your listing, newest first.</p><div style="margin-top:14px">`;
+  ev.forEach(e=>{ const when=e.date?fmtDate(e.date):(e.when||''); h+=`<div class="prop"><div class="row"><span class="addr">${esc(e.label)}</span><span style="color:var(--muted);font-size:13px">${esc(when)}</span></div>${e.detail?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(e.detail)}</div>`:''}</div>`; });
+  return h+`</div></div>`;
+}
+function showingsSection(sc){
+  const sh=sc.showings||[];
+  let h=`<div data-sec="showings" hidden><h1>Showings</h1><p class="sub">${sh.length?sh.length+' logged — with buyer feedback where we have it.':'Showings and buyer feedback will appear here.'}</p>`;
+  sh.forEach(x=>{ h+=`<div class="prop"><div class="addr">${esc(x.when||'Showing')}</div>${x.note?`<div style="color:var(--muted);font-size:14px;margin-top:6px">${esc(x.note)}</div>`:''}</div>`; });
+  return h+`</div>`;
+}
+function offersSection(sc){
+  const of=sc.offers||[];
+  let h=`<div data-sec="offers" hidden><h1>Offers</h1><p class="sub">${of.length?of.length+' offer'+(of.length===1?'':'s')+' on the table.':'Offers will show here as they come in.'}</p>`;
+  of.forEach(o=>{ h+=`<div class="prop"><div class="row"><span class="addr">${esc(o.amount||'Offer')}</span>${o.by?`<span style="color:var(--muted);font-size:13px">respond by ${esc(fmtDate(o.by))}</span>`:''}</div>${o.terms?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(o.terms)}</div>`:''}</div>`; });
+  return h+`</div>`;
+}
 function renderApp(pages, clientSlug, openTab, fb){
   const clientName=(pages[0]&&pages[0].client_name)||'there';
   const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{};
@@ -160,14 +185,17 @@ function renderApp(pages, clientSlug, openTab, fb){
   const stage=(pages[0]&&pages[0].stage)||'active';
   const lender={name:(pages[0]&&pages[0].lender_name)||'',phone:(pages[0]&&pages[0].lender_phone)||''};
   const listings=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const id=s.id||s.address;if(!seen[id]){seen[id]=1;out.push({id,address:s.address});}}));return out;})();
+  const sellerPage=pages.find(p=>p.hub_type==='seller'||/seller_hub|listing_presentation|under_contract/.test(p.page_type||'')); const seller=!!sellerPage; const sc=(sellerPage&&sellerPage.content)||{};
   let tabs=`<button class="tab" data-tab="today">Today</button>`;
   for(const p of pages)tabs+=`<button class="tab" data-tab="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}</button>`;
   if(td)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
+  if(seller)tabs+=`<button class="tab" data-tab="activity">Activity</button><button class="tab" data-tab="showings">Showings</button><button class="tab" data-tab="offers">Offers</button>`;
   tabs+=`<button class="tab" data-tab="messages">Messages</button><button class="tab" data-tab="settings">Settings</button>`;
   let body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   body+=todaySection(pages,clientName,stage,lender);
   for(const p of pages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
+  if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
   body+=messagesSection(agent.name);
   body+=settingsSection();
   body+=`<div class="foot">${esc(agent.name||'')}${agent.phone?' · '+esc(agent.phone):''}<br><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span><br><a href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;" style="color:var(--muted);font-size:12px;display:inline-block;margin-top:6px">Sign out</a></div></div>`;
