@@ -5,6 +5,8 @@ const ANON = 'sb_publishable_k5AzjS458cQ5CRzgZP_jbg_zTe3tQyx';
 const TYPE_BY_SLUG = { buyer: 'buyer_hub', seller: 'seller_hub', listing: 'listing_presentation', closing: 'under_contract' };
 const SLUG_BY_TYPE = { buyer_hub: 'buyer', seller_hub: 'seller', listing_presentation: 'listing', under_contract: 'closing' };
 const TAB_LABEL = { buyer_hub: 'Your Search', seller_hub: 'Your Sale', listing_presentation: 'Listing', under_contract: 'Closing' };
+function slugOf(p){ return p.page_type==='custom' ? ((p.content&&p.content.slug)||'page') : (SLUG_BY_TYPE[p.page_type]||'page'); }
+function labelOf(p){ return p.page_type==='custom' ? ((p.content&&(p.content.tabLabel||p.content.headline))||'Page') : (TAB_LABEL[p.page_type]||'Page'); }
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
 function parseTime(s){ if(!s) return null; const m=String(s).trim().match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)?$/i); if(!m) return null; let h=+m[1]; const min=m[2]?+m[2]:0; const ap=(m[3]||'').toLowerCase(); if(ap==='pm'&&h<12)h+=12; if(ap==='am'&&h===12)h=0; return {h:Math.min(23,h),min:Math.min(59,min)}; }
@@ -129,7 +131,7 @@ function buildICS(c, dOnly){ const days=daysFromContent(c); const lines=['BEGIN:
 function pageSection(p) {
   const c=p.content||{}; const steps=(c.nextSteps||[]).filter(s=>s&&s.text); const doneN=steps.filter(s=>s.done).length;
   const secs=(c.sections||[]).filter(s=>s&&s.enabled!==false); const nb=c.neighborhoods||[],kd=c.keyDates||[],docs=c.documents||[];
-  let h=`<div data-sec="p-${SLUG_BY_TYPE[p.page_type]||'page'}" hidden><h1>${esc(c.headline||TAB_LABEL[p.page_type]||'Your page')}</h1>${c.subhead?`<p class="sub">${esc(c.subhead)}</p>`:''}`;
+  let h=`<div data-sec="p-${slugOf(p)}" hidden><h1>${esc(c.headline||labelOf(p)||'Your page')}</h1>${c.subhead?`<p class="sub">${esc(c.subhead)}</p>`:''}`;
   if(steps.length){const pct=Math.round(doneN/steps.length*100);h+=`<div class="card" style="margin-top:16px"><div class="row"><span class="klabel">Your next steps</span><span class="klabel">${doneN}/${steps.length} done</span></div><div class="bar"><i style="width:${pct}%"></i></div>`+steps.map(s=>`<div class="chk ${s.done?'done':''}"><span class="m">${s.done?'●':'○'}</span><span>${esc(s.text)}</span></div>`).join('')+`</div>`;}
   if(nb.length)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Neighborhoods</span><div style="margin-top:6px">${nb.map(n=>`<span class="pill">${esc(n)}</span>`).join('')}</div></div>`;
   if(secs.length)h+=secs.map((s,i)=>`<div class="acc"><div class="h${i===0?' open':''}" data-acc><span>${esc(s.title)}</span><span class="c">+</span></div><div class="b"${i===0?'':' hidden'}>${esc(s.body)}</div></div>`).join('');
@@ -147,13 +149,13 @@ function todaySection(pages, clientName, stage, lender){
   else if(uc){ const closing=keyDates.find(d=>/clos/i.test(d.label||'')); h+=`<div class="card feature"><span class="klabel">Milestone</span><div class="big">You\u2019re under contract</div><div style="opacity:.9;margin-top:4px">${closing?('Closing '+esc(closing.date)):'On the path to closing \u2014 here\u2019s what\u2019s next.'}</div></div>`; }
   else if(nextDay){const n=nextDay.stops.length;const fs=nextDay.stops[0]||{};h+=`<div class="card feature"><span class="klabel">Next tour</span><div class="big">${esc(fmtDate(nextDay.date))}</div><div style="opacity:.9;margin-top:4px">${n} home${n===1?'':'s'}${fs.time?' \u00b7 starts '+esc(fs.time):''}</div><a class="btn ghost" style="margin-top:12px;border-color:rgba(255,255,255,.6);color:#fff" data-go="tour">View tour</a></div>`;}
   else if(latestUpdate){h+=`<div class="card feature"><span class="klabel">Latest</span><div class="big" style="font-size:19px;line-height:1.3;margin-top:8px">${esc(latestUpdate.text)}</div></div>`;}
-  h+=`<div class="card"><span class="klabel">Needs you</span><div class="big" style="font-size:20px">${openSteps>0?openSteps+' next step'+(openSteps===1?'':'s'):'You\u2019re all caught up'}</div>${openSteps>0&&pages[0]?`<a class="btn small" style="margin-top:10px" data-go="p-${SLUG_BY_TYPE[pages[0].page_type]}">Review</a>`:''}</div>`;
+  h+=`<div class="card"><span class="klabel">Needs you</span><div class="big" style="font-size:20px">${openSteps>0?openSteps+' next step'+(openSteps===1?'':'s'):'You\u2019re all caught up'}</div>${openSteps>0&&pages[0]?`<a class="btn small" style="margin-top:10px" data-go="p-${slugOf(pages[0])}">Review</a>`:''}</div>`;
   h+=`</div>`;
   if(uc && keyDates.length){h+=`<div class="card" style="margin-top:14px"><span class="klabel">Important dates</span>${keyDates.map(d=>`<div class="row" style="margin-top:8px"><span>${esc(d.label)}</span><span style="color:var(--muted)">${esc(d.date)}</span></div>`).join('')}</div>`;}
   if(uc){ const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{}; h+=`<div class="card" style="margin-top:14px"><span class="klabel">Your team</span>`+teamRow(agent.name||'Your agent','Agent',agent.phone)+((lender&&(lender.name||lender.phone))?teamRow(lender.name||'Versatile Lending','Lender',lender.phone):'')+`</div>`; }
   if(latestUpdate && !closed)h+=`<div class="card" style="margin-top:14px"><span class="klabel">From your agent</span><p style="margin:6px 0 0">${esc(latestUpdate.text)}</p></div>`;
   if(tour && !uc && !closed)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Homes, ranked by the group</span><div id="rankList" style="margin-top:10px"></div><div class="why" style="margin-top:8px">Ranked from your ratings \u2014 Jade weighs Love over Maybe. Rate homes on the Tour tab.</div></div>`;
-  h+=`<div class="tiles">`; for(const p of pages)h+=`<div class="tile" data-go="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}<div class="k">Open</div></div>`;
+  h+=`<div class="tiles">`; for(const p of pages)h+=`<div class="tile" data-go="p-${slugOf(p)}">${esc(labelOf(p))}<div class="k">Open</div></div>`;
   if(tour)h+=`<div class="tile" data-go="tour">Tour<div class="k">Rate homes</div></div>`;
   h+=`<div class="tile" data-go="messages">Messages<div class="k">Reach your agent</div></div><div class="tile" data-go="settings">Settings<div class="k">Notifications</div></div></div></div>`; return h;
 }
@@ -219,7 +221,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs){
   const listings=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const id=s.id||s.address;if(!seen[id]){seen[id]=1;out.push({id,address:s.address});}}));return out;})();
   const sellerPage=pages.find(p=>p.hub_type==='seller'||/seller_hub|listing_presentation|under_contract/.test(p.page_type||'')); const seller=!!sellerPage; const sc=(sellerPage&&sellerPage.content)||{};
   let tabs=`<button class="tab" data-tab="today">Today</button>`;
-  for(const p of pages)tabs+=`<button class="tab" data-tab="p-${SLUG_BY_TYPE[p.page_type]}">${esc(TAB_LABEL[p.page_type]||'Page')}</button>`;
+  for(const p of pages)tabs+=`<button class="tab" data-tab="p-${slugOf(p)}">${esc(labelOf(p))}</button>`;
   if(td)tabs+=`<button class="tab" data-tab="tour">Tour</button>`;
   if(seller)tabs+=`<button class="tab" data-tab="activity">Activity</button><button class="tab" data-tab="showings">Showings</button><button class="tab" data-tab="offers">Offers</button>`;
   if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent">Your Agent</button>`;
