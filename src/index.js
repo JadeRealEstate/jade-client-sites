@@ -733,11 +733,20 @@ function section(sec, i, total) {
 }
 
 function renderQuestionnairePage(opts) {
-  const { agentId, type, schema, templateId, agentName, sb, anon } = opts;
+  const { agentId, type, schema, templateId, agentName, brand, sb, anon } = opts;
   const secs = (schema && schema.sections) || [];
   const total = secs.length;
   const heading = type === 'seller' ? 'Seller Questionnaire' : 'Buyer Questionnaire';
   const who = agentName ? `${escH(agentName)} · Jade Real Estate` : 'Jade Real Estate';
+  const b = brand || {};
+  const brandOn = !!b.brandQuestionnaires;
+  const primary = (brandOn && b.primaryColor) ? b.primaryColor : '#335143';
+  const secondary = (brandOn && b.secondaryColor) ? b.secondaryColor : '#546751';
+  const accent = (brandOn && b.accentColor) ? b.accentColor : '#b08d57';
+  const logo = (brandOn && b.logoUrl) ? b.logoUrl : '';
+  const brandName = (brandOn && (b.displayName || b.business)) ? (b.displayName || b.business) : '';
+  const brandCss = brandOn ? `<style>:root{--jade:${escH(primary)};--jade2:${escH(secondary)};--gold:${escH(accent)}}</style>` : '';
+  const markHtml = brandOn ? (logo ? `<img src="${escH(logo)}" alt="" style="height:32px;width:auto;max-width:180px;object-fit:contain">` : `<span class="mark">${escH(brandName || agentName || '')}</span>`) : `<span class="mark">Jade</span>`;
   const body = secs.map((s,i)=>section(s,i,total)).join('');
   const schemaJson = JSON.stringify(schema).replace(/</g,'\\u003c');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -781,9 +790,9 @@ textarea.in{resize:vertical}
 .done .big{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:30px;color:var(--jade);margin-bottom:8px}
 .done p{color:var(--ink);opacity:.75}
 .foot{text-align:center;font-size:11px;color:var(--jade2);margin-top:18px}
-</style></head>
+</style>${brandCss}</head>
 <body><div class="wrap">
-<div class="brand"><span class="mark">Jade</span><span class="who">${who}</span></div>
+<div class="brand">${markHtml}<span class="who">${who}</span></div>
 <div class="card">
   <div class="prog"><i id="bar"></i></div>
   <form id="qform" autocomplete="on">
@@ -1181,12 +1190,12 @@ async function handleQuestionnaire(parts){
     const rows=await r.json(); if(Array.isArray(rows)&&rows[0]&&rows[0].schema&&(rows[0].schema.sections||[]).length){ schema=rows[0].schema; templateId=rows[0].id; }
   }catch(e){}
   if(!schema) schema=JADE_STANDARD[type];
-  let agentName='';
+  let agentName='', brand=null;
   try{
-    const pr=await fetch(`${SB}/rest/v1/profiles?id=eq.${agentId}&select=full_name`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
-    const prs=await pr.json(); if(Array.isArray(prs)&&prs[0]) agentName=prs[0].full_name||'';
+    const pr=await fetch(`${SB}/rest/v1/profiles?id=eq.${agentId}&select=full_name,brand_profile`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const prs=await pr.json(); if(Array.isArray(prs)&&prs[0]){ agentName=prs[0].full_name||''; brand=prs[0].brand_profile||null; }
   }catch(e){}
-  return htmlResp(renderQuestionnairePage({agentId,type,schema,templateId,agentName,sb:SB,anon:ANON}));
+  return htmlResp(renderQuestionnairePage({agentId,type,schema,templateId,agentName,brand,sb:SB,anon:ANON}));
 }
 
 async function handlePortalSite(parts, request){
