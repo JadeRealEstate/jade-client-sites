@@ -1189,10 +1189,30 @@ async function handleQuestionnaire(parts){
   return htmlResp(renderQuestionnairePage({agentId,type,schema,templateId,agentName,sb:SB,anon:ANON}));
 }
 
+async function handlePortalSite(parts, request){
+  const slug=decodeURIComponent(parts[1]||'').toLowerCase();
+  if(!slug) return notFound();
+  const enc=encodeURIComponent(slug);
+  try{
+    const r=await fetch(`${SB}/rest/v1/portal_sites?slug=eq.${enc}&status=eq.published&select=html,is_public&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const rows=await r.json(); const row=Array.isArray(rows)?rows[0]:null;
+    if(row&&row.html) return new Response(row.html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
+  }catch(e){}
+  const tok=getCookie(request,'sb_at'); const user=tok?await getUser(tok):null;
+  if(!user) return authResp(!!getCookie(request,'sb_rt'));
+  try{
+    const r=await fetch(`${SB}/rest/v1/portal_sites?slug=eq.${enc}&status=eq.published&select=html&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+tok}});
+    const rows=await r.json(); const row=Array.isArray(rows)?rows[0]:null;
+    if(row&&row.html) return new Response(row.html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
+  }catch(e){}
+  return notFound();
+}
+
 export default {
   async fetch(request, env){
     const url=new URL(request.url); const parts=url.pathname.split('/').filter(Boolean);
     if(parts[0]==='q'){ return await handleQuestionnaire(parts); }
+    if(parts[0]==='site'){ return await handlePortalSite(parts, request); }
     if(parts.length===0){ if(env.ASSETS){try{const res=await env.ASSETS.fetch(request);if(res&&res.status!==404)return res;}catch(e){}} return notFound(); }
     const clientSlug=decodeURIComponent(parts[0]).toLowerCase();
     const _tok=getCookie(request,'sb_at'); const _user=_tok?await getUser(_tok):null;
