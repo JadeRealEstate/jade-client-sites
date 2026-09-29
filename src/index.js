@@ -829,9 +829,9 @@ textarea.in{resize:vertical}
     });});
     return {answers:ans,contact:contact};}
   form.addEventListener('submit',function(e){e.preventDefault();if(!validate(curPanel()))return;submit.disabled=true;submit.textContent='Sending…';
-    var c=collect();var row=Object.assign({agent_id:AGENT,type:TYPE,template_id:TPL,answers:c.answers},c.contact);
+    var rid=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():null;var c=collect();var row=Object.assign({agent_id:AGENT,type:TYPE,template_id:TPL,answers:c.answers},c.contact);if(rid)row.id=rid;
     fetch(SB+'/rest/v1/questionnaire_responses',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(row)})
-    .then(function(r){if(!r.ok)throw new Error('save');document.querySelector('.prog').style.display='none';form.style.display='none';document.getElementById('done').hidden=false;bar.style.width='100%';window.scrollTo({top:0,behavior:'smooth'});})
+    .then(function(r){if(!r.ok)throw new Error('save');document.querySelector('.prog').style.display='none';form.style.display='none';document.getElementById('done').hidden=false;bar.style.width='100%';window.scrollTo({top:0,behavior:'smooth'});if(rid){try{fetch('https://agentapp.jaderealestate.com/api/questionnaire-notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({responseId:rid})}).catch(function(){});}catch(e){}}})
     .catch(function(){submit.disabled=false;submit.textContent='Submit';errEl.textContent='Something went wrong sending your answers. Please try again.';});
   });
   show(0);
