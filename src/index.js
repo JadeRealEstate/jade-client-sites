@@ -806,7 +806,7 @@ textarea.in{resize:vertical}
   </form>
   <div class="done" id="done" hidden><div class="big">Thank you!</div><p>Your answers are on their way to your agent. They'll be in touch soon.</p></div>
 </div>
-<div class="foot">Powered by Jade Real Estate</div>
+<div class="foot">Powered by Jade Real Estate \u00b7 Equal Housing Opportunity</div>
 </div>
 <script>
 (function(){
