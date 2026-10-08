@@ -1295,10 +1295,13 @@ function renderLanding(slug,page,ag){
   const bullets=(Array.isArray(d.guideBullets)?d.guideBullets:[]).filter(Boolean).slice(0,4);
   const cta=esc(d.ctaText||'Get the guide');
   const capture='https://agentapp.jaderealestate.com/api/lead-capture';
-  const guideCard=hasGuide?`
+  const showForm=hasGuide||!!(d.ctaText||d.guideHeadline);
+  const chipLabel=hasGuide?'Free guide':'Get in touch';
+  const formHeadline=esc(d.guideHeadline||(hasGuide?(g.label||'Grab my free guide'):(d.ctaText||'Request a consultation')));
+  const captureCard=showForm?`
     <div class="card" id="box">
-      <div class="gtag">Free guide</div>
-      <div class="gh">${esc(d.guideHeadline||g.label||'Grab my free guide')}</div>
+      <div class="gtag">${chipLabel}</div>
+      <div class="gh">${formHeadline}</div>
       ${bullets.length?`<ul class="gb">${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
       <form id="lf" autocomplete="on">
         <div class="hp"><input tabindex="-1" autocomplete="off" name="website" id="website"></div>
@@ -1355,15 +1358,15 @@ button:disabled{opacity:.6}
     ${tagline?`<div class="tag">${tagline}</div>`:''}
     ${socHtml}
   </div>
-  ${guideCard}
+  ${captureCard}
   ${linkHtml?`<div class="links">${linkHtml}</div>`:''}
   <div class="foot"><span class="lg">Jade</span> · ${footer}</div>
 </div>
-${hasGuide?`<script>
+${showForm?`<script>
 (function(){
   var f=document.getElementById('lf'),sb=document.getElementById('sb'),err=document.getElementById('err'),box=document.getElementById('box');
   if(!f)return;
-  var GUIDE=${JSON.stringify(g.url||'')},SLUG=${JSON.stringify(slug)},LABEL=${JSON.stringify(g.label||d.guideHeadline||'your guide')},CTA=${JSON.stringify(cta)};
+  var GUIDE=${JSON.stringify(g.url||'')},SLUG=${JSON.stringify(slug)},LABEL=${JSON.stringify(g.label||d.guideHeadline||'your guide')},CTA=${JSON.stringify(cta)},AGENT=${JSON.stringify(ag.name||brand.name||brand.displayName||'your agent')};
   f.addEventListener('submit',function(e){
     e.preventDefault();err.textContent='';
     var name=f.name.value.trim(),email=f.email.value.trim(),phone=f.phone.value.trim(),website=document.getElementById('website').value;
@@ -1374,7 +1377,9 @@ ${hasGuide?`<script>
       .then(function(j){
         if(!j.ok){sb.disabled=false;sb.textContent=CTA;err.textContent=(j&&j.error)||'Something went wrong — try again.';return;}
         var url=j.guideUrl||GUIDE;
-        box.innerHTML='<div class="done"><div style="font-size:30px">✓</div><div class="b">You’re all set!</div><p style="color:#55624f;font-size:14px">We emailed <strong>'+email.replace(/[<>&]/g,'')+'</strong> your copy of '+LABEL.replace(/[<>&]/g,'')+'. Your download should start now.</p>'+(url?'<p style="margin-top:10px"><a href="'+url+'" download style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--btn')+';font-weight:800">Download again</a></p>':'')+'</div>';
+        var em=email.replace(/[<>&]/g,'');
+        var msg=url?('We emailed <strong>'+em+'</strong> your copy of '+LABEL.replace(/[<>&]/g,'')+'. Your download should start now.'):('Thanks — we got your info and '+AGENT.replace(/[<>&]/g,'')+' will reach out to '+em+' shortly.');
+        box.innerHTML='<div class="done"><div style="font-size:30px">✓</div><div class="b">You’re all set!</div><p style="color:#55624f;font-size:14px">'+msg+'</p>'+(url?'<p style="margin-top:10px"><a href="'+url+'" download style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--btn')+';font-weight:800">Download again</a></p>':'')+'</div>';
         if(url){try{var a=document.createElement('a');a.href=url;a.download='';a.target='_blank';document.body.appendChild(a);a.click();a.remove();}catch(e){}}
       })
       .catch(function(){sb.disabled=false;sb.textContent=CTA;err.textContent='Network error — try again.';});
