@@ -1264,83 +1264,106 @@ async function handleLanding(parts){
   return htmlResp(renderLanding(slug,page,ag),200);
 }
 function renderLanding(slug,page,ag){
-  const d=page.data||{}; const g=d.guide||{};
-  const accent=/^#[0-9a-fA-F]{6}$/.test(d.accent||'')?d.accent:'#335143';
-  const headline=esc(d.headline||page.title||'Your free guide');
-  const subhead=esc(d.subhead||'');
-  const bullets=(Array.isArray(d.bullets)?d.bullets:[]).filter(Boolean).slice(0,6);
-  const cta=esc(d.ctaText||'Get the guide');
-  const guideLabel=esc(g.label||d.headline||'the guide');
+  const d=page.data||{}; const g=d.guide||{}; const brand=ag.brand||{};
+  const mode=(d.brandMode==='agent')?'agent':'jade';
+  // palette
+  const agentPrimary=/^#[0-9a-fA-F]{6}$/.test(brand.primaryColor||'')?brand.primaryColor:'#335143';
+  const agentAccent=/^#[0-9a-fA-F]{6}$/.test(brand.accentColor||'')?brand.accentColor:agentPrimary;
+  const jadeAccent=/^#[0-9a-fA-F]{6}$/.test(d.accent||'')?d.accent:'#335143';
+  const bg = mode==='agent' ? agentPrimary : '#2c4a3b';
+  const btn = mode==='agent' ? agentAccent : '#335143';
+  const chip = mode==='agent' ? agentAccent : '#b08d57';
+  // identity
+  const displayName=esc(d.displayName||brand.displayName||brand.name||ag.name||'Jade Real Estate');
+  const title=esc(d.title||brand.title||'REALTOR®');
+  const tagline=esc(d.tagline||brand.tagline||'');
+  const avatar=d.avatarUrl||brand.headshotUrl||brand.photo||'';
+  const logo=mode==='agent'?(brand.logoUrl||(brand.logos&&(brand.logos.horizontal||brand.logos.square))||''):'';
+  // links
+  const links=(Array.isArray(d.links)?d.links:[]).filter(l=>l&&l.label&&l.url).slice(0,20);
+  const linkHtml=links.map(l=>`<a class="lk" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join('');
+  // social
+  const soc=[];
+  const ig=brand.instagram||d.instagram, fb=brand.facebook||d.facebook, web=brand.website||d.website;
+  if(ig) soc.push(`<a href="${esc(/^https?:/.test(ig)?ig:'https://instagram.com/'+String(ig).replace(/^@/,''))}" target="_blank" rel="noopener" aria-label="Instagram">IG</a>`);
+  if(fb) soc.push(`<a href="${esc(/^https?:/.test(fb)?fb:'https://facebook.com/'+fb)}" target="_blank" rel="noopener" aria-label="Facebook">FB</a>`);
+  if(web) soc.push(`<a href="${esc(/^https?:/.test(web)?web:'https://'+web)}" target="_blank" rel="noopener" aria-label="Website">WEB</a>`);
+  const socHtml=soc.length?`<div class="soc">${soc.join('')}</div>`:'';
+  // featured guide
   const hasGuide=!!(g.url);
-  const brand=ag.brand||{}; const agentName=esc(ag.name||brand.name||'Jade Real Estate');
-  const agentTitle=esc(brand.title||'REALTOR®'); const agentPhone=esc(brand.phone||''); const photo=brand.headshotUrl||brand.photo||brand.headshot||'';
-  const bulletHtml=bullets.map(b=>`<li>${esc(b)}</li>`).join('');
+  const guideLabel=esc(g.label||d.guideHeadline||'My free guide');
+  const bullets=(Array.isArray(d.guideBullets)?d.guideBullets:[]).filter(Boolean).slice(0,4);
+  const cta=esc(d.ctaText||'Get the guide');
   const capture='https://agentapp.jaderealestate.com/api/lead-capture';
+  const guideCard=hasGuide?`
+    <div class="card" id="box">
+      <div class="gtag">Free guide</div>
+      <div class="gh">${esc(d.guideHeadline||g.label||'Grab my free guide')}</div>
+      ${bullets.length?`<ul class="gb">${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
+      <form id="lf" autocomplete="on">
+        <div class="hp"><input tabindex="-1" autocomplete="off" name="website" id="website"></div>
+        <input id="nm" name="name" placeholder="Full name" required autocomplete="name">
+        <input id="em" name="email" type="email" placeholder="Email" required autocomplete="email">
+        <input id="ph" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+        <button type="submit" id="sb">${cta}</button>
+        <div class="err" id="err"></div>
+      </form>
+    </div>`:'';
+  const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
+  const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
   const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${headline} · Jade Real Estate</title>
+<title>${displayName} · ${page.title?esc(page.title):'Jade Real Estate'}</title>
 <style>
-:root{--accent:${accent};--ink:#15201a;--muted:#55624f;--cream:#f2efeb;--line:#e3e6e1}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--cream)}
-.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-.hero{background:var(--accent);color:#fff}
-.heroIn{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:56px 0}
-@media(max-width:820px){.heroIn{grid-template-columns:1fr;padding:34px 0;gap:26px}}
-.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:700;margin-bottom:12px}
-h1{font-size:40px;line-height:1.08;margin:0 0 14px;font-weight:800}
-@media(max-width:820px){h1{font-size:30px}}
-.sub{font-size:17px;line-height:1.5;opacity:.94;margin:0 0 20px}
-ul.b{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px}
-ul.b li{position:relative;padding-left:28px;font-size:15.5px;opacity:.96}
-ul.b li:before{content:"";position:absolute;left:0;top:3px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.22)}
-ul.b li:after{content:"✓";position:absolute;left:4px;top:1px;font-size:12px;font-weight:800}
-.card{background:#fff;border-radius:16px;box-shadow:0 20px 50px rgba(21,32,26,.18);padding:26px;color:var(--ink)}
-.card h2{margin:0 0 4px;font-size:21px}
-.card p.ch{margin:0 0 16px;color:var(--muted);font-size:14px}
-label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 5px}
-input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:9px;font-size:15px;background:#fff;color:var(--ink)}
-input:focus{outline:none;border-color:var(--accent)}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-button{margin-top:18px;width:100%;background:var(--accent);color:#fff;border:0;border-radius:9px;padding:14px;font-size:16px;font-weight:800;cursor:pointer}
-button:disabled{opacity:.6;cursor:default}
-.fine{font-size:11.5px;color:#9aa698;margin-top:10px;text-align:center}
-.agent{display:flex;align-items:center;gap:14px;border-top:1px solid var(--line);margin-top:22px;padding-top:18px}
-.agent img{width:52px;height:52px;border-radius:50%;object-fit:cover}
-.agent .ph{width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px}
-.done{text-align:center;padding:14px 4px}
-.done .big{font-size:20px;font-weight:800;margin:6px 0}
-.foot{padding:26px 0;text-align:center;color:var(--muted);font-size:13px}
-.logo{font-family:Georgia,serif;font-style:italic;font-size:22px}
-</style></head><body>
-<div class="hero"><div class="wrap"><div class="heroIn">
-  <div>
-    <div class="eyebrow">Free guide</div>
-    <h1>${headline}</h1>
-    ${subhead?`<p class="sub">${subhead}</p>`:''}
-    ${bulletHtml?`<ul class="b">${bulletHtml}</ul>`:''}
+:root{--bg:${bg};--btn:${btn};--chip:${chip}}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;min-height:100vh;padding:40px 18px 60px}
+.col{max-width:480px;margin:0 auto}
+.prof{text-align:center}
+.av{width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.35);margin:0 auto 14px;display:block}
+.av.ph{display:grid;place-items:center;background:rgba(255,255,255,.18);font-size:40px;font-weight:800}
+.logo{max-height:48px;margin:0 auto 14px;display:block}
+h1{font-size:25px;margin:0;font-weight:800;letter-spacing:-.01em}
+.ttl{font-size:13px;opacity:.82;margin-top:3px;text-transform:uppercase;letter-spacing:.08em}
+.tag{font-size:15px;opacity:.95;margin:12px auto 0;max-width:30em;line-height:1.5}
+.soc{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.soc a{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff;text-decoration:none;font-size:11px;font-weight:800;letter-spacing:.03em}
+.soc a:hover{background:rgba(255,255,255,.28)}
+.card{background:#fff;color:#15201a;border-radius:18px;padding:22px;margin:24px 0;box-shadow:0 18px 44px rgba(0,0,0,.22)}
+.gtag{display:inline-block;background:var(--chip);color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+.gh{font-size:20px;font-weight:800;margin:10px 0 2px;line-height:1.15}
+.gb{list-style:none;padding:0;margin:10px 0 2px;display:grid;gap:7px}
+.gb li{position:relative;padding-left:22px;font-size:14px;color:#3a4a3f}
+.gb li:before{content:"✓";position:absolute;left:0;color:var(--btn);font-weight:800}
+form{margin-top:14px;display:grid;gap:9px}
+input{width:100%;padding:12px;border:1px solid #d9ded6;border-radius:10px;font-size:15px;color:#15201a;background:#fff}
+input:focus{outline:none;border-color:var(--btn)}
+.hp{position:absolute;left:-9999px;height:1px;width:1px;overflow:hidden}
+button{background:var(--btn);color:#fff;border:0;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.6}
+.err{font-size:12px;color:#b3261e;min-height:1px}
+.lk{display:block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;text-decoration:none;text-align:center;padding:15px;border-radius:12px;font-weight:700;font-size:15.5px;margin-bottom:12px;transition:transform .06s,background .15s}
+.lk:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
+.foot{text-align:center;opacity:.7;font-size:12px;margin-top:26px}
+.foot .lg{font-family:Georgia,serif;font-style:italic;font-size:17px}
+.done{text-align:center}
+.done .b{font-size:19px;font-weight:800;margin:6px 0}
+</style></head><body><div class="col">
+  <div class="prof">
+    ${logo?`<img class="logo" src="${esc(logo)}" alt="">`:avatarHtml}
+    <h1>${displayName}</h1>
+    ${title?`<div class="ttl">${title}</div>`:''}
+    ${tagline?`<div class="tag">${tagline}</div>`:''}
+    ${socHtml}
   </div>
-  <div class="card" id="box">
-    <h2>${cta}</h2>
-    <p class="ch">Enter your details and we’ll send <strong>${guideLabel}</strong> straight to your inbox.</p>
-    <form id="lf" autocomplete="on">
-      <div class="hp"><label>Leave blank</label><input tabindex="-1" autocomplete="off" name="website" id="website"></div>
-      <label for="nm">Full name</label><input id="nm" name="name" required autocomplete="name">
-      <label for="em">Email</label><input id="em" name="email" type="email" required autocomplete="email">
-      <label for="ph">Phone</label><input id="ph" name="phone" type="tel" autocomplete="tel" placeholder="Optional, but we can text you the guide">
-      <button type="submit" id="sb">${cta}</button>
-      <div class="fine" id="err" style="color:#b3261e"></div>
-      <div class="fine">We’ll only use your info to send the guide and follow up. No spam.</div>
-    </form>
-    <div class="agent">
-      ${photo?`<img src="${esc(photo)}" alt="">`:`<div class="ph">${esc((agentName||'J').slice(0,1))}</div>`}
-      <div><div style="font-weight:700">${agentName}</div><div style="font-size:13px;color:var(--muted)">${agentTitle}${agentPhone?' · '+agentPhone:''}</div></div>
-    </div>
-  </div>
-</div></div></div>
-<div class="foot"><span class="logo">Jade</span> Real Estate</div>
-<script>
+  ${guideCard}
+  ${linkHtml?`<div class="links">${linkHtml}</div>`:''}
+  <div class="foot"><span class="lg">Jade</span> · ${footer}</div>
+</div>
+${hasGuide?`<script>
 (function(){
   var f=document.getElementById('lf'),sb=document.getElementById('sb'),err=document.getElementById('err'),box=document.getElementById('box');
-  var GUIDE=${JSON.stringify(g.url||'')},SLUG=${JSON.stringify(slug)},LABEL=${JSON.stringify(g.label||d.headline||'your guide')};
+  if(!f)return;
+  var GUIDE=${JSON.stringify(g.url||'')},SLUG=${JSON.stringify(slug)},LABEL=${JSON.stringify(g.label||d.guideHeadline||'your guide')},CTA=${JSON.stringify(cta)};
   f.addEventListener('submit',function(e){
     e.preventDefault();err.textContent='';
     var name=f.name.value.trim(),email=f.email.value.trim(),phone=f.phone.value.trim(),website=document.getElementById('website').value;
@@ -1349,15 +1372,15 @@ button:disabled{opacity:.6;cursor:default}
     fetch(${JSON.stringify(capture)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:SLUG,name:name,email:email,phone:phone,website:website})})
       .then(function(r){return r.json().catch(function(){return{ok:false};});})
       .then(function(j){
-        if(!j.ok){sb.disabled=false;sb.textContent=${JSON.stringify(cta)};err.textContent=(j&&j.error)||'Something went wrong — please try again.';return;}
+        if(!j.ok){sb.disabled=false;sb.textContent=CTA;err.textContent=(j&&j.error)||'Something went wrong — try again.';return;}
         var url=j.guideUrl||GUIDE;
-        box.innerHTML='<div class="done"><div style="font-size:34px">✓</div><div class="big">You’re all set!</div><p style="color:#55624f">We just emailed <strong>'+(email.replace(/[<>&]/g,''))+'</strong> your copy of '+LABEL.replace(/[<>&]/g,'')+'. Your download should start now.</p>'+(url?'<p style="margin-top:14px"><a href="'+url+'" style="background:'+getComputedStyle(document.documentElement).getPropertyValue('--accent')+';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:9px;display:inline-block" download>Download again</a></p>':'')+'</div>';
+        box.innerHTML='<div class="done"><div style="font-size:30px">✓</div><div class="b">You’re all set!</div><p style="color:#55624f;font-size:14px">We emailed <strong>'+email.replace(/[<>&]/g,'')+'</strong> your copy of '+LABEL.replace(/[<>&]/g,'')+'. Your download should start now.</p>'+(url?'<p style="margin-top:10px"><a href="'+url+'" download style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--btn')+';font-weight:800">Download again</a></p>':'')+'</div>';
         if(url){try{var a=document.createElement('a');a.href=url;a.download='';a.target='_blank';document.body.appendChild(a);a.click();a.remove();}catch(e){}}
       })
-      .catch(function(){sb.disabled=false;sb.textContent=${JSON.stringify(cta)};err.textContent='Network error — please try again.';});
+      .catch(function(){sb.disabled=false;sb.textContent=CTA;err.textContent='Network error — try again.';});
   });
 })();
-</script>
+</script>`:''}
 </body></html>`;
   return body;
 }
