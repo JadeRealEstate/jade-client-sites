@@ -1376,7 +1376,7 @@ function renderLanding(slug,page,ag){
         <div class="err" id="err"></div>
       </form>
     </div>`;
-  const captureCard=guideMode?guideCard:(showForm?`
+  let captureCard=guideMode?guideCard:(showForm?`
     <div class="card" id="box">
       <div class="gtag">${chipLabel}</div>
       <div class="gh">${formHeadline}</div>
@@ -1392,6 +1392,22 @@ function renderLanding(slug,page,ag){
       </form>
       ${(action==='tour'&&bookingUrl)?`<a class="lk" style="margin-top:10px;background:var(--btn);border:0;color:#fff" href="${esc(bookingUrl)}" target="_blank" rel="noopener">Book a time now</a>`:''}
     </div>`:'');
+  const instant=d.deliver==='instant'&&guideMode;
+  const instantCard=`
+    <div class="card" id="box">
+      <div class="gtag">${guides.length>1?'Free guides':'Free guide'}</div>
+      ${d.guideHeadline?`<div class="gh">${esc(d.guideHeadline)}</div>`:(single&&guides[0]?`<div class="gh">${esc(guides[0].label||'Grab my free guide')}</div>`:'')}
+      <div class="gitems">${guides.map(gd=>{const gb=(Array.isArray(gd.bullets)?gd.bullets:[]).filter(Boolean).slice(0,6);return `<div class="gitem">${single?'':`<div class="gititle">${esc(gd.label||'Guide')}</div>`}${gb.length?`<ul class="gb">${gb.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}<a class="gbtn" href="${esc(gd.url||'')}" target="_blank" rel="noopener" download>${single?cta:('Download '+esc(gd.label||'it'))}</a></div>`;}).join('')}</div>
+    </div>`;
+  if(instant) captureCard=instantCard;
+  const nextStepTxt=esc(d.nextStep||'');
+  const aboutHtml=d.about?`<div class="sec"><div class="sect">About ${displayName}</div><p>${esc(d.about)}</p></div>`:'';
+  const testiArr=(Array.isArray(d.testimonials)?d.testimonials:[]).filter(t=>t&&t.quote);
+  const testiHtml=testiArr.length?`<div class="sec"><div class="sect">What clients say</div>${testiArr.map(t=>`<blockquote class="tq">&ldquo;${esc(t.quote)}&rdquo;${t.name?`<cite>&mdash; ${esc(t.name)}</cite>`:''}</blockquote>`).join('')}</div>`:'';
+  const faqArr=(Array.isArray(d.faqs)?d.faqs:[]).filter(f=>f&&f.q);
+  const faqHtml=faqArr.length?`<div class="sec"><div class="sect">FAQs</div>${faqArr.map(f=>`<div class="faq"><div class="fq">${esc(f.q)}</div>${f.a?`<div class="fa">${esc(f.a)}</div>`:''}</div>`).join('')}</div>`:'';
+  const nextHtml=nextStepTxt?`<div class="sec nextstep"><div class="nx">${nextStepTxt}</div>${bookingUrl?`<a class="nxbtn" href="${esc(bookingUrl)}" target="_blank" rel="noopener">${nextStepTxt}</a>`:''}</div>`:'';
+  const sectionsHtml=aboutHtml+testiHtml+faqHtml+nextHtml;
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
   const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1440,6 +1456,18 @@ button:disabled{opacity:.6}
 .foot .lg{font-family:Georgia,serif;font-style:italic;font-size:17px}
 .done{text-align:center}
 .done .b{font-size:19px;font-weight:800;margin:6px 0}
+.sec{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:16px 18px;margin:16px 0;text-align:left}
+.sect{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
+.sec p{margin:0;font-size:14.5px;line-height:1.55;opacity:.95}
+.tq{margin:0 0 12px;font-size:14.5px;line-height:1.5;font-style:italic;opacity:.96}
+.tq:last-child{margin-bottom:0}
+.tq cite{display:block;font-style:normal;font-size:12.5px;opacity:.75;margin-top:4px}
+.faq{margin-bottom:12px}.faq:last-child{margin-bottom:0}
+.fq{font-weight:700;font-size:14.5px;margin-bottom:3px}
+.fa{font-size:13.5px;opacity:.9;line-height:1.5}
+.nextstep{text-align:center}
+.nx{font-size:15px;font-weight:700;margin-bottom:10px}
+.nxbtn{display:inline-block;background:var(--btn);color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px}
 </style></head><body><div class="col">
   <div class="prof">
     ${logo?`<img class="logo" src="${esc(logo)}" alt="">`:avatarHtml}
@@ -1449,6 +1477,7 @@ button:disabled{opacity:.6}
     ${socHtml}
   </div>
   ${captureCard}
+  ${sectionsHtml}
   ${linkHtml?`<div class="links">${linkHtml}</div>`:''}
   <div class="foot"><span class="lg">Jade</span> · ${footer}</div>
 </div>
