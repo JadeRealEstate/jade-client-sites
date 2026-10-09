@@ -1292,11 +1292,32 @@ async function fetchAgentCard(agentId){
     const rows=await r.json(); const p=(Array.isArray(rows)&&rows[0])||{}; return {name:p.full_name||'',brand:p.brand_profile||{}};
   }catch(e){ return {name:'',brand:{}}; }
 }
+async function fetchResources(ids){
+  if(!ids.length) return {};
+  try{
+    const inlist=ids.map(encodeURIComponent).join(',');
+    const r=await fetch(`${SB}/rest/v1/agent_resources?id=in.(${inlist})&select=id,url,filename,cover_url,title,learn`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{m[x.id]=x;}); return m;
+  }catch(e){ return {}; }
+}
+// Resolve any guide that references a library resource to that resource's CURRENT
+// file, so replacing a resource never breaks a published page's link.
+async function resolveGuideResources(data){
+  try{
+    const guides=Array.isArray(data.guides)?data.guides:[];
+    const ids=guides.map(g=>g&&g.resourceId).filter(Boolean);
+    if(!ids.length) return data;
+    const m=await fetchResources(ids);
+    const ng=guides.map(g=>{ const r=g&&g.resourceId&&m[g.resourceId]; if(!r) return g; return Object.assign({},g,{ url:r.url||g.url, filename:r.filename||g.filename, coverUrl:r.cover_url||g.coverUrl, label:g.label||r.title, bullets:(Array.isArray(g.bullets)&&g.bullets.filter(Boolean).length)?g.bullets:(Array.isArray(r.learn)?r.learn:g.bullets) }); });
+    return Object.assign({},data,{guides:ng});
+  }catch(e){ return data; }
+}
 async function handleLanding(parts){
   const slug=decodeURIComponent(parts[1]||'').toLowerCase();
   if(!slug) return notFound();
   const page=await fetchLanding(slug);
   if(!page) return notFound();
+  if(page.data) page.data=await resolveGuideResources(page.data);
   const ag=await fetchAgentCard(page.agent_id);
   return htmlResp(renderLanding(slug,page,ag),200);
 }
