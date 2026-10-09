@@ -1337,7 +1337,25 @@ function renderLanding(slug,page,ag){
   const showForm=hasGuide||action!=='guide'||!!(d.ctaText||d.guideHeadline);
   const chipLabel=action==='homes'?'Get homes':action==='tour'?'Book a tour':(hasGuide?'Free guide':'Get the guide');
   const formHeadline=esc(d.guideHeadline||(hasGuide?(g.label||'Grab my free guide'):(d.ctaText||'Request a consultation')));
-  const captureCard=showForm?`
+  const guides=(Array.isArray(d.guides)&&d.guides.length)?d.guides.filter(x=>x&&x.url):(g.url?[{id:'g0',label:g.label||d.guideHeadline||'Guide',url:g.url,filename:g.filename}]:[]);
+  const guideMode=action==='guide'&&guides.length>0;
+  const guideBtns=guides.map(gd=>`<button type="button" class="gbtn" data-gid="${esc(gd.id||'')}" data-url="${esc(gd.url||'')}" data-label="${esc(gd.label||'guide')}">${guides.length>1?esc(gd.label||'Download'):cta}</button>`).join('');
+  const guideCard=`
+    <div class="card" id="box">
+      <div class="gtag">${guides.length>1?'Free guides':'Free guide'}</div>
+      <div class="gh">${esc(d.guideHeadline||(guides[0]&&guides[0].label)||'Grab my free guide')}</div>
+      ${bullets.length?`<ul class="gb">${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
+      <form id="lf" autocomplete="on">
+        <div class="hp"><input tabindex="-1" autocomplete="off" name="website" id="website"></div>
+        <input id="nm" name="name" placeholder="Full name" required autocomplete="name">
+        <input id="em" name="email" type="email" placeholder="Email" required autocomplete="email">
+        <input id="ph" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+        ${guides.length>1?`<div class="ghint">Grab any of these \u2014 we'll email each one.</div>`:''}
+        <div class="gbtns">${guideBtns}</div>
+        <div class="err" id="err"></div>
+      </form>
+    </div>`;
+  const captureCard=guideMode?guideCard:(showForm?`
     <div class="card" id="box">
       <div class="gtag">${chipLabel}</div>
       <div class="gh">${formHeadline}</div>
@@ -1352,7 +1370,7 @@ function renderLanding(slug,page,ag){
         <div class="err" id="err"></div>
       </form>
       ${(action==='tour'&&bookingUrl)?`<a class="lk" style="margin-top:10px;background:var(--btn);border:0;color:#fff" href="${esc(bookingUrl)}" target="_blank" rel="noopener">Book a time now</a>`:''}
-    </div>`:'';
+    </div>`:'');
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
   const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1384,6 +1402,11 @@ input:focus{outline:none;border-color:var(--btn)}
 .hp{position:absolute;left:-9999px;height:1px;width:1px;overflow:hidden}
 button{background:var(--btn);color:#fff;border:0;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer}
 button:disabled{opacity:.6}
+.gbtns{display:grid;gap:8px;margin-top:4px}
+.gbtn{background:var(--btn);color:#fff;border:0;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer;width:100%}
+.gbtn:disabled{opacity:.7}
+.gbtn.got{background:#5c6b5a}
+.ghint{font-size:12px;color:#55624f;margin-top:2px}
 .err{font-size:12px;color:#b3261e;min-height:1px}
 .lk{display:block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;text-decoration:none;text-align:center;padding:15px;border-radius:12px;font-weight:700;font-size:15.5px;margin-bottom:12px;transition:transform .06s,background .15s}
 .lk:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
@@ -1403,7 +1426,7 @@ button:disabled{opacity:.6}
   ${linkHtml?`<div class="links">${linkHtml}</div>`:''}
   <div class="foot"><span class="lg">Jade</span> · ${footer}</div>
 </div>
-${showForm?`<script>
+${(showForm&&!guideMode)?`<script>
 (function(){
   var f=document.getElementById('lf'),sb=document.getElementById('sb'),err=document.getElementById('err'),box=document.getElementById('box');
   if(!f)return;
@@ -1425,6 +1448,34 @@ ${showForm?`<script>
       })
       .catch(function(){sb.disabled=false;sb.textContent=CTA;err.textContent='Network error — try again.';});
   });
+})();
+</script>`:''}
+${guideMode?`<script>
+(function(){
+  var f=document.getElementById('lf'),err=document.getElementById('err');
+  if(!f)return;
+  var SLUG=${JSON.stringify(slug)},CAP=${JSON.stringify(capture)};
+  var btns=f.querySelectorAll('.gbtn');
+  for(var i=0;i<btns.length;i++){(function(b){
+    b.addEventListener('click',function(){
+      err.style.color='';err.textContent='';
+      var name=f.name.value.trim(),email=f.email.value.trim(),phone=f.phone.value.trim(),website=document.getElementById('website').value;
+      if(!name){err.textContent='Please enter your name.';return;}
+      if(!email||email.indexOf('@')<0){err.textContent='Please enter a valid email.';return;}
+      var gid=b.getAttribute('data-gid'),url=b.getAttribute('data-url'),label=b.getAttribute('data-label')||'guide';
+      b.disabled=true;var orig=b.textContent;b.textContent='Sending\u2026';
+      fetch(CAP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:SLUG,name:name,email:email,phone:phone,website:website,action:'guide',guideId:gid})})
+        .then(function(r){return r.json().catch(function(){return{ok:false};});})
+        .then(function(j){
+          if(!j.ok){b.disabled=false;b.textContent=orig;err.textContent=(j&&j.error)||'Something went wrong \u2014 try again.';return;}
+          var dl=j.guideUrl||url;
+          b.textContent='\u2713 '+label;b.classList.add('got');
+          if(dl){try{var a=document.createElement('a');a.href=dl;a.download='';a.target='_blank';document.body.appendChild(a);a.click();a.remove();}catch(e){}}
+          err.style.color='#335143';err.textContent='Emailed to '+email.replace(/[<>&]/g,'')+(btns.length>1?'. Grab another if you like.':'.');
+        })
+        .catch(function(){b.disabled=false;b.textContent=orig;err.textContent='Network error \u2014 try again.';});
+    });
+  })(btns[i]);}
 })();
 </script>`:''}
 </body></html>`;
