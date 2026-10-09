@@ -740,12 +740,17 @@ function renderQuestionnairePage(opts) {
   const who = agentName ? `${escH(agentName)} · Jade Real Estate` : 'Jade Real Estate';
   const b = brand || {};
   const brandOn = !!b.brandQuestionnaires;
-  const primary = (brandOn && b.primaryColor) ? b.primaryColor : '#335143';
-  const secondary = (brandOn && b.secondaryColor) ? b.secondaryColor : '#546751';
-  const accent = (brandOn && b.accentColor) ? b.accentColor : '#b08d57';
+  const HEX6 = (c) => /^#[0-9a-fA-F]{6}$/.test(c || '');
+  // Agent-chosen colorway (saved on the template schema) overrides the palette,
+  // same brand colors the custom sites use — so the questionnaire matches.
+  const cw = (schema && schema.colorway && HEX6(schema.colorway.bg)) ? schema.colorway : null;
+  const colorsOn = brandOn || !!cw;
+  const primary = cw ? cw.bg : ((brandOn && b.primaryColor) ? b.primaryColor : '#335143');
+  const secondary = (cw && HEX6(cw.btn)) ? cw.btn : ((brandOn && b.secondaryColor) ? b.secondaryColor : '#546751');
+  const accent = (cw && HEX6(cw.chip)) ? cw.chip : ((brandOn && b.accentColor) ? b.accentColor : '#b08d57');
   const logo = (brandOn && b.logoUrl) ? b.logoUrl : '';
   const brandName = (brandOn && (b.displayName || b.business)) ? (b.displayName || b.business) : '';
-  const brandCss = brandOn ? `<style>:root{--jade:${escH(primary)};--jade2:${escH(secondary)};--gold:${escH(accent)}}</style>` : '';
+  const brandCss = colorsOn ? `<style>:root{--jade:${escH(primary)};--jade2:${escH(secondary)};--gold:${escH(accent)}}</style>` : '';
   const markHtml = brandOn ? (logo ? `<img src="${escH(logo)}" alt="" style="height:32px;width:auto;max-width:180px;object-fit:contain">` : `<span class="mark">${escH(brandName || agentName || '')}</span>`) : `<span class="mark">Jade</span>`;
   const body = secs.map((s,i)=>section(s,i,total)).join('');
   const schemaJson = JSON.stringify(schema).replace(/</g,'\\u003c');
