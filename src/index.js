@@ -971,11 +971,28 @@ textarea{min-height:96px;resize:vertical}
 @media(max-width:520px){.nav .in{gap:10px;padding:10px 12px}.brand{font-size:18px}.wrap{padding:18px 14px 108px}h1{font-size:24px}.tiles{grid-template-columns:1fr}}
 `;
 
-function shell(inner, title) {
+// Shared presentation styles — one system, three directions. Colors stay the
+// agent's; styles vary typography, scale and spacing. jade_standard is the
+// current look (no override), so unstyled portals render exactly as before.
+const STYLE_DEFS = {
+  jade_standard: { fonts: "family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700", css: "" },
+  editorial: {
+    fonts: "family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Montserrat:wght@400;500;600;700",
+    css: "h1,h2,.brand,.big,.done .big,.hd .t{font-family:'Fraunces',Georgia,serif !important}h1{font-size:clamp(30px,6vw,46px) !important;letter-spacing:-.01em;line-height:1.05}h2{font-size:23px !important}.wrap{max-width:860px !important;padding-top:30px}.card{padding:22px}.secmeta,.tile .k{letter-spacing:.16em !important;text-transform:uppercase}",
+  },
+  luxury: {
+    fonts: "family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600",
+    css: "h1,h2,.brand,.big,.done .big,.hd .t{font-family:'Cormorant Garamond',Georgia,serif !important;font-weight:500 !important;letter-spacing:.01em}h1{font-size:clamp(32px,6vw,50px) !important;line-height:1.04}h2{font-size:26px !important}.wrap{max-width:820px !important;padding-top:34px}.card{border-radius:14px}.tab{letter-spacing:.08em;text-transform:uppercase;font-size:12px}",
+  },
+};
+const styleKey = (k) => (k && STYLE_DEFS[k]) ? k : 'jade_standard';
+function styleFontsLink(style) { const d = STYLE_DEFS[styleKey(style)]; return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?${d.fonts}&display=swap">`; }
+function styleOverrideCss(style) { const d = STYLE_DEFS[styleKey(style)]; return d.css ? `<style>${d.css}</style>` : ''; }
+
+function shell(inner, title, style) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>` +
-    `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` +
-    `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap">` +
-    `<style>${CSS}</style></head><body>${inner}</body></html>`;
+    styleFontsLink(style) +
+    `<style>${CSS}</style>${styleOverrideCss(style)}</head><body>${inner}</body></html>`;
 }
 const htmlResp = (b, s) => new Response(b, { status: s || 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 const notFound = () => htmlResp(shell(`<div class="na"><div><h1 style="color:var(--jade)">Page not available</h1><p style="color:var(--muted)">This link isn't active yet. Check with your agent.</p></div></div>`, 'Jade Real Estate'), 404);
@@ -1208,7 +1225,8 @@ var pf=document.getElementById('prefForm');if(pf)pf.addEventListener('submit',fu
 setInterval(loadChat,20000);
 })();
 </script>`;
-  return htmlResp(shell(body, clientName+' · Jade Real Estate'),200);
+  const _style=(pages.find(p=>p.content&&p.content.style)||{content:{}}).content.style||'jade_standard';
+  return htmlResp(shell(body, clientName+' · Jade Real Estate', _style),200);
 }
 
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
