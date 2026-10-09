@@ -1328,12 +1328,14 @@ function renderLanding(slug,page,ag){
   const socHtml=soc.length?`<div class="soc">${soc.join('')}</div>`:'';
   // featured guide
   const hasGuide=!!(g.url);
+  const action=d.action||'guide';
+  const bookingUrl=(/^https?:\/\//i.test(d.bookingUrl||'')?d.bookingUrl:(d.bookingUrl?('https://'+d.bookingUrl):''));
   const guideLabel=esc(g.label||d.guideHeadline||'My free guide');
   const bullets=(Array.isArray(d.guideBullets)?d.guideBullets:[]).filter(Boolean).slice(0,4);
   const cta=esc(d.ctaText||'Get the guide');
   const capture='https://agentapp.jaderealestate.com/api/lead-capture';
-  const showForm=hasGuide||!!(d.ctaText||d.guideHeadline);
-  const chipLabel=hasGuide?'Free guide':'Get in touch';
+  const showForm=hasGuide||action!=='guide'||!!(d.ctaText||d.guideHeadline);
+  const chipLabel=action==='homes'?'Get homes':action==='tour'?'Book a tour':(hasGuide?'Free guide':'Get the guide');
   const formHeadline=esc(d.guideHeadline||(hasGuide?(g.label||'Grab my free guide'):(d.ctaText||'Request a consultation')));
   const captureCard=showForm?`
     <div class="card" id="box">
@@ -1345,9 +1347,11 @@ function renderLanding(slug,page,ag){
         <input id="nm" name="name" placeholder="Full name" required autocomplete="name">
         <input id="em" name="email" type="email" placeholder="Email" required autocomplete="email">
         <input id="ph" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+        ${action==='homes'?`<textarea id="msg" name="message" rows="2" placeholder="Anything specific you\u2019re looking for? (optional)" style="resize:vertical;font-family:inherit"></textarea>`:''}
         <button type="submit" id="sb">${cta}</button>
         <div class="err" id="err"></div>
       </form>
+      ${(action==='tour'&&bookingUrl)?`<a class="lk" style="margin-top:10px;background:var(--btn);border:0;color:#fff" href="${esc(bookingUrl)}" target="_blank" rel="noopener">Book a time now</a>`:''}
     </div>`:'';
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
@@ -1403,19 +1407,19 @@ ${showForm?`<script>
 (function(){
   var f=document.getElementById('lf'),sb=document.getElementById('sb'),err=document.getElementById('err'),box=document.getElementById('box');
   if(!f)return;
-  var GUIDE=${JSON.stringify(g.url||'')},SLUG=${JSON.stringify(slug)},LABEL=${JSON.stringify(g.label||d.guideHeadline||'your guide')},CTA=${JSON.stringify(cta)},AGENT=${JSON.stringify(ag.name||brand.name||brand.displayName||'your agent')};
+  var GUIDE=${JSON.stringify(g.url||'')},SLUG=${JSON.stringify(slug)},LABEL=${JSON.stringify(g.label||d.guideHeadline||'your guide')},CTA=${JSON.stringify(cta)},AGENT=${JSON.stringify(ag.name||brand.name||brand.displayName||'your agent')},CONFIRM=${JSON.stringify(d.confirmMsg||'')},ACTION=${JSON.stringify(action)},AREA=${JSON.stringify(d.area||'')};
   f.addEventListener('submit',function(e){
     e.preventDefault();err.textContent='';
     var name=f.name.value.trim(),email=f.email.value.trim(),phone=f.phone.value.trim(),website=document.getElementById('website').value;
     if(!email||email.indexOf('@')<0){err.textContent='Please enter a valid email.';return;}
     sb.disabled=true;sb.textContent='Sending…';
-    fetch(${JSON.stringify(capture)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:SLUG,name:name,email:email,phone:phone,website:website})})
+    fetch(${JSON.stringify(capture)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:SLUG,name:name,email:email,phone:phone,website:website,action:ACTION,area:AREA,message:(document.getElementById('msg')?document.getElementById('msg').value.trim():'')})})
       .then(function(r){return r.json().catch(function(){return{ok:false};});})
       .then(function(j){
         if(!j.ok){sb.disabled=false;sb.textContent=CTA;err.textContent=(j&&j.error)||'Something went wrong — try again.';return;}
         var url=j.guideUrl||GUIDE;
         var em=email.replace(/[<>&]/g,'');
-        var msg=url?('We emailed <strong>'+em+'</strong> your copy of '+LABEL.replace(/[<>&]/g,'')+'. Your download should start now.'):('Thanks — we got your info and '+AGENT.replace(/[<>&]/g,'')+' will reach out to '+em+' shortly.');
+        var msg=url?('We emailed <strong>'+em+'</strong> your copy of '+LABEL.replace(/[<>&]/g,'')+'. Your download should start now.'):(CONFIRM?CONFIRM.replace(/[<>&]/g,''):('Thanks — we got your info and '+AGENT.replace(/[<>&]/g,'')+' will reach out to '+em+' shortly.'));
         box.innerHTML='<div class="done"><div style="font-size:30px">✓</div><div class="b">You’re all set!</div><p style="color:#55624f;font-size:14px">'+msg+'</p>'+(url?'<p style="margin-top:10px"><a href="'+url+'" download style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--btn')+';font-weight:800">Download again</a></p>':'')+'</div>';
         if(url){try{var a=document.createElement('a');a.href=url;a.download='';a.target='_blank';document.body.appendChild(a);a.click();a.remove();}catch(e){}}
       })
