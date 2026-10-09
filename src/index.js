@@ -1339,19 +1339,19 @@ function renderLanding(slug,page,ag){
   const formHeadline=esc(d.guideHeadline||(hasGuide?(g.label||'Grab my free guide'):(d.ctaText||'Request a consultation')));
   const guides=(Array.isArray(d.guides)&&d.guides.length)?d.guides.filter(x=>x&&x.url):(g.url?[{id:'g0',label:g.label||d.guideHeadline||'Guide',url:g.url,filename:g.filename}]:[]);
   const guideMode=action==='guide'&&guides.length>0;
-  const guideBtns=guides.map(gd=>`<button type="button" class="gbtn" data-gid="${esc(gd.id||'')}" data-url="${esc(gd.url||'')}" data-label="${esc(gd.label||'guide')}">${guides.length>1?esc(gd.label||'Download'):cta}</button>`).join('');
+  const single=guides.length===1;
+  const guideItems=guides.map(gd=>{const gb=(Array.isArray(gd.bullets)?gd.bullets:[]).filter(Boolean).slice(0,6);return `<div class="gitem">${single?'':`<div class="gititle">${esc(gd.label||'Guide')}</div>`}${gb.length?`<ul class="gb">${gb.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}<button type="button" class="gbtn" data-gid="${esc(gd.id||'')}" data-url="${esc(gd.url||'')}" data-label="${esc(gd.label||'guide')}">${single?cta:('Get '+esc(gd.label||'it'))}</button></div>`;}).join('');
   const guideCard=`
     <div class="card" id="box">
       <div class="gtag">${guides.length>1?'Free guides':'Free guide'}</div>
-      <div class="gh">${esc(d.guideHeadline||(guides[0]&&guides[0].label)||'Grab my free guide')}</div>
-      ${bullets.length?`<ul class="gb">${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
+      ${d.guideHeadline?`<div class="gh">${esc(d.guideHeadline)}</div>`:(single&&guides[0]?`<div class="gh">${esc(guides[0].label||'Grab my free guide')}</div>`:'')}
       <form id="lf" autocomplete="on">
         <div class="hp"><input tabindex="-1" autocomplete="off" name="website" id="website"></div>
         <input id="nm" name="name" placeholder="Full name" required autocomplete="name">
         <input id="em" name="email" type="email" placeholder="Email" required autocomplete="email">
         <input id="ph" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
-        ${guides.length>1?`<div class="ghint">Grab any of these \u2014 we'll email each one.</div>`:''}
-        <div class="gbtns">${guideBtns}</div>
+        ${guides.length>1?`<div class="ghint">Enter your info once, then grab any guide below.</div>`:''}
+        <div class="gitems">${guideItems}</div>
         <div class="err" id="err"></div>
       </form>
     </div>`;
@@ -1406,6 +1406,11 @@ button:disabled{opacity:.6}
 .gbtn{background:var(--btn);color:#fff;border:0;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer;width:100%}
 .gbtn:disabled{opacity:.7}
 .gbtn.got{background:#5c6b5a}
+.gitems{display:grid;gap:0;margin-top:6px}
+.gitem{border-top:1px solid #eef0ec;padding-top:14px;margin-top:14px}
+.gitem:first-child{border-top:0;padding-top:0;margin-top:4px}
+.gititle{font-weight:800;font-size:15px;margin:0 0 2px}
+.gitem .gb{margin:6px 0 10px}
 .ghint{font-size:12px;color:#55624f;margin-top:2px}
 .err{font-size:12px;color:#b3261e;min-height:1px}
 .lk{display:block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;text-decoration:none;text-align:center;padding:15px;border-radius:12px;font-weight:700;font-size:15.5px;margin-bottom:12px;transition:transform .06s,background .15s}
