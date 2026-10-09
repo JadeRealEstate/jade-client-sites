@@ -1137,8 +1137,10 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   const hasBuyJ=buyPagesN>0||!!td||allHomes.length>0;
   const hasSellJ=sellPagesN>0||seller;
   const dualJ=hasBuyJ&&hasSellJ;
+  const ordered=pages.slice().sort((a,b)=>{const ca=a.page_type==='custom',cb=b.page_type==='custom';if(ca&&cb)return(((a.content&&a.content.order)||0)-((b.content&&b.content.order)||0));if(ca)return 1;if(cb)return -1;return 0;});
+  const visiblePages=ordered.filter(p=>!(p.page_type==='custom'&&p.content&&p.content.hidden));
   let tabs=`<button class="tab" data-tab="today" data-journey="both">Today</button>`;
-  for(const p of pages){const j=_tj(p);tabs+=`<button class="tab ${j==='sell'?'tab-sell':'tab-buy'}" data-tab="p-${slugOf(p)}" data-journey="${j}">${esc(labelOf(p))}</button>`;}
+  for(const p of visiblePages){const j=_tj(p);tabs+=`<button class="tab ${j==='sell'?'tab-sell':'tab-buy'}" data-tab="p-${slugOf(p)}" data-journey="${j}">${esc(labelOf(p))}</button>`;}
   if(td)tabs+=`<button class="tab tab-buy" data-tab="tour" data-journey="buy">Tour</button>`;
   if(allHomes.length)tabs+=`<button class="tab tab-buy" data-tab="homes" data-journey="buy">Homes</button>`;
   if(seller)tabs+=`<button class="tab tab-sell" data-tab="activity" data-journey="sell">Activity</button><button class="tab tab-sell" data-tab="showings" data-journey="sell">Showings</button><button class="tab tab-sell" data-tab="offers" data-journey="sell">Offers</button>`;
@@ -1154,7 +1156,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   }
   if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
   body+=todaySection(pages,clientName,stage,lender);
-  for(const p of pages)body+=pageSection(p);
+  for(const p of visiblePages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
   if(allHomes.length)body+=homesSection(allHomes);
   if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
