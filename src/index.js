@@ -1119,7 +1119,7 @@ function offersSection(sc){
   of.forEach(o=>{ h+=`<div class="prop"><div class="row"><span class="addr">${esc(o.amount||'Offer')}</span>${o.by?`<span style="color:var(--muted);font-size:13px">respond by ${esc(fmtDate(o.by))}</span>`:''}</div>${o.terms?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(o.terms)}</div>`:''}</div>`; });
   return h+`</div>`;
 }
-function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs){
+function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage){
   const clientName=(pages[0]&&pages[0].client_name)||'there';
   const agent=(pages.find(p=>p.content&&p.content.agent)||{content:{}}).content.agent||{};
   const showAgent=!pages.some(p=>p.content&&p.content.showAgent===false);
@@ -1151,6 +1151,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs){
   } else {
     body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
+  if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
   body+=todaySection(pages,clientName,stage,lender);
   for(const p of pages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
@@ -1205,7 +1206,15 @@ setInterval(loadChat,20000);
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
 async function fetchPrefs(cid, email, token){ try{ const r=await fetch(`${SB}/rest/v1/client_prefs?select=prefs&client_id=eq.${cid}&email=eq.${encodeURIComponent(email)}`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); const pr=(Array.isArray(rows)&&rows[0]&&rows[0].prefs)||{}; return pr.visibility||'shared'; }catch(e){ return 'shared'; } }
 async function fetchMsgs(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_messages?select=from_name,from_role,body,created_at&client_id=eq.${cid}&order=created_at.asc`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }catch(e){ return []; } }
-async function fetchPages(clientSlug, token){ const q=`${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id,stage,lender_name,lender_phone,transaction_id,transactions(type,status,visible_to_client)&client_slug=eq.${encodeURIComponent(clientSlug)}&status=eq.published&order=page_type.asc`; const r=await fetch(q,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); if(!Array.isArray(rows))return []; return rows.filter(p=>!p.transactions || p.transactions.visible_to_client!==false); }
+async function fetchPages(clientSlug, token, manage){ const sf=manage?'':'&status=eq.published'; const q=`${SB}/rest/v1/client_pages?select=content,client_name,page_type,client_id,stage,lender_name,lender_phone,transaction_id,agent_id,status,transactions(type,status,visible_to_client)&client_slug=eq.${encodeURIComponent(clientSlug)}${sf}&order=page_type.asc`; const r=await fetch(q,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); if(!Array.isArray(rows))return []; if(manage) return rows; return rows.filter(p=>!p.transactions || p.transactions.visible_to_client!==false); }
+// The agent who OWNS a client's pages (or a Jade admin) may view the hub as
+// themselves — no per-client login — and sees drafts too. Everyone else is a
+// client: published pages only.
+async function viewerCanManage(slug, token, userId){
+  try{ const r=await fetch(`${SB}/rest/v1/client_pages?client_slug=eq.${encodeURIComponent(slug)}&select=agent_id&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+token}}); const rows=await r.json(); const aid=(Array.isArray(rows)&&rows[0]&&rows[0].agent_id)||''; if(aid&&aid===userId) return true; }catch(e){}
+  try{ const r=await fetch(`${SB}/rest/v1/rpc/is_jade_admin`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}); if(r.ok){ const v=await r.json(); if(v===true) return true; } }catch(e){}
+  return false;
+}
 
 function getCookie(req,name){ const c=req.headers.get('cookie')||''; const m=c.match(new RegExp('(?:^|; )'+name+'=([^;]*)')); return m?decodeURIComponent(m[1]):''; }
 async function getUser(token){ if(!token) return null; try{ const r=await fetch(SB+'/auth/v1/user',{headers:{apikey:ANON,Authorization:'Bearer '+token}}); if(!r.ok) return null; return await r.json(); }catch(e){ return null; } }
@@ -1549,13 +1558,14 @@ export default {
     if(parts[1]&&parts[1].toLowerCase().endsWith('.ics')){ if(!_user)return notFound(); const type=TYPE_BY_SLUG[parts[1].toLowerCase().slice(0,-4)]; const pages=await fetchPages(clientSlug,_tok); const p=pages.find(x=>x.page_type===type)||pages.find(x=>daysFromContent(x.content||{}).length); if(!p)return notFound(); const dq=url.searchParams.get('d'); const di=(dq!=null&&/^\d+$/.test(dq))?parseInt(dq,10):null; return new Response(buildICS(p.content||{},di),{headers:{'content-type':'text/calendar; charset=utf-8','content-disposition':'attachment; filename="jade-tour.ics"'}}); }
     if(!_user){ return authResp(!!getCookie(request,'sb_rt')); }
     try{
-      const pages=await fetchPages(clientSlug,_tok); if(!pages.length)return noAccessResp();
+      const canManage=await viewerCanManage(clientSlug,_tok,_user.id);
+      const pages=await fetchPages(clientSlug,_tok,canManage); if(!pages.length)return noAccessResp();
       let openTab='today'; if(parts[1]&&TYPE_BY_SLUG[parts[1].toLowerCase()])openTab='p-'+parts[1].toLowerCase();
       const cid=(pages[0]&&pages[0].client_id)||'';
       const em=((_user&&_user.email)||'').toLowerCase();
       const meName=(_user&&_user.user_metadata&&(_user.user_metadata.full_name||_user.user_metadata.name))||(em?em.split('@')[0].replace(/^./,c=>c.toUpperCase()):'You');
       const [fb,vis,msgs]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok)]);
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs);
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage);
     }catch(e){ return notFound(); }
   },
 };
