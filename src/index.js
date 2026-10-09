@@ -1369,7 +1369,8 @@ function renderLanding(slug,page,ag){
   const chipLabel=action==='homes'?'Get homes':action==='tour'?'Book a tour':(hasGuide?'Free guide':'Get the guide');
   const formHeadline=esc(d.guideHeadline||(hasGuide?(g.label||'Grab my free guide'):(d.ctaText||'Request a consultation')));
   const guides=(Array.isArray(d.guides)&&d.guides.length)?d.guides.filter(x=>x&&x.url):(g.url?[{id:'g0',label:g.label||d.guideHeadline||'Guide',url:g.url,filename:g.filename}]:[]);
-  const guideMode=action==='guide'&&guides.length>0;
+  const isMain=d.kind==='agent';
+  const guideMode=(action==='guide'||isMain)&&guides.length>0;
   const single=guides.length===1;
   const guideItems=guides.map(gd=>{const gb=(Array.isArray(gd.bullets)?gd.bullets:[]).filter(Boolean).slice(0,6);return `<div class="gitem">${single?'':`<div class="gititle">${esc(gd.label||'Guide')}</div>`}${gb.length?`<ul class="gb">${gb.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}<button type="button" class="gbtn" data-gid="${esc(gd.id||'')}" data-url="${esc(gd.url||'')}" data-label="${esc(gd.label||'guide')}">${single?cta:('Get '+esc(gd.label||'it'))}</button></div>`;}).join('');
   const guideCard=`
@@ -1410,6 +1411,7 @@ function renderLanding(slug,page,ag){
       <div class="gitems">${guides.map(gd=>{const gb=(Array.isArray(gd.bullets)?gd.bullets:[]).filter(Boolean).slice(0,6);return `<div class="gitem">${single?'':`<div class="gititle">${esc(gd.label||'Guide')}</div>`}${gb.length?`<ul class="gb">${gb.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}<a class="gbtn" href="${esc(gd.url||'')}" target="_blank" rel="noopener" download>${single?cta:('Download '+esc(gd.label||'it'))}</a></div>`;}).join('')}</div>
     </div>`;
   if(instant) captureCard=instantCard;
+  if(isMain&&guides.length===0){ captureCard = bookingUrl ? `<div class="card" id="box"><div class="gtag">Work with me</div><div class="gh">${esc(d.ctaText||d.guideHeadline||'Let\u2019s talk about your move')}</div><a class="gbtn" href="${esc(bookingUrl)}" target="_blank" rel="noopener">${esc(d.ctaText||'Book a time')}</a></div>` : captureCard; }
   const nextStepTxt=esc(d.nextStep||'');
   const aboutHtml=d.about?`<div class="sec"><div class="sect">About ${displayName}</div><p>${esc(d.about)}</p></div>`:'';
   const testiArr=(Array.isArray(d.testimonials)?d.testimonials:[]).filter(t=>t&&t.quote);
@@ -1417,7 +1419,10 @@ function renderLanding(slug,page,ag){
   const faqArr=(Array.isArray(d.faqs)?d.faqs:[]).filter(f=>f&&f.q);
   const faqHtml=faqArr.length?`<div class="sec"><div class="sect">FAQs</div>${faqArr.map(f=>`<div class="faq"><div class="fq">${esc(f.q)}</div>${f.a?`<div class="fa">${esc(f.a)}</div>`:''}</div>`).join('')}</div>`:'';
   const nextHtml=nextStepTxt?`<div class="sec nextstep"><div class="nx">${nextStepTxt}</div>${bookingUrl?`<a class="nxbtn" href="${esc(bookingUrl)}" target="_blank" rel="noopener">${nextStepTxt}</a>`:''}</div>`:'';
-  const sectionsHtml=aboutHtml+testiHtml+faqHtml+nextHtml;
+  const svcArr=(Array.isArray(d.services)?d.services:[]).filter(x=>x&&x.title);
+  const servicesHtml=svcArr.length?`<div class="sec"><div class="sect">How I can help</div>${svcArr.map(x=>`<div class="faq"><div class="fq">${esc(x.title)}</div>${x.desc?`<div class="fa">${esc(x.desc)}</div>`:''}${secURL(x.url)?`<div style="margin-top:4px"><a class="lk" style="display:inline-block;width:auto;padding:6px 12px" href="${esc(secURL(x.url))}" target="_blank" rel="noopener">Learn more</a></div>`:''}</div>`).join('')}</div>`:'';
+  const bookHtml=(isMain&&bookingUrl&&guides.length>0&&!nextStepTxt)?`<div class="sec nextstep"><div class="nx">Ready when you are</div><a class="nxbtn" href="${esc(bookingUrl)}" target="_blank" rel="noopener">Book a time</a></div>`:'';
+  const sectionsHtml=servicesHtml+aboutHtml+testiHtml+faqHtml+nextHtml+bookHtml;
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
   const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
