@@ -1000,6 +1000,43 @@ function buildICS(c, dOnly){ const days=daysFromContent(c); const lines=['BEGIN:
   days.forEach((day,di)=>{ if(dOnly!=null && di!==dOnly) return; day.stops.forEach((s,i)=>{const t=parseTime(s.time)||{h:9+i,min:0};const e=addMin(t,30);lines.push('BEGIN:VEVENT','UID:'+Date.now()+'-'+(uid++)+'@jaderealestate.com','DTSTAMP:'+stamp,'DTSTART:'+stampLocal(day.date,t),'DTEND:'+stampLocal(day.date,e),'SUMMARY:'+('Showing: '+s.address).replace(/[,;\\]/g,' '),'LOCATION:'+String(s.address).replace(/[,;\\]/g,' '),'DESCRIPTION:'+String(s.note||'Home tour').replace(/[,;\\]/g,' '),'END:VEVENT');}); });
   lines.push('END:VCALENDAR'); return lines.join('\r\n'); }
 
+function secURL(u){u=String(u||'').trim(); if(/^https?:\/\//i.test(u))return u; if(u&&u.indexOf('.')>0&&!/\s/.test(u))return 'https://'+u; return '';}
+function renderClientSec(s,i,c){
+  const kind=s.kind||'text'; const items=Array.isArray(s.items)?s.items:[]; const open=i===0;
+  let inner='';
+  if(kind==='places'){
+    const cards = items.length ? items.map(it=>{
+      const links=[it.website&&secURL(it.website)?`<a href="${esc(secURL(it.website))}" target="_blank" rel="noreferrer" style="font-weight:600">Website</a>`:'',it.directions&&secURL(it.directions)?`<a href="${esc(secURL(it.directions))}" target="_blank" rel="noreferrer" style="font-weight:600">Directions</a>`:''].filter(Boolean).join('');
+      return `<div class="prop"><div class="addr">${esc(it.name)}</div>${it.blurb?`<div style="color:var(--muted);font-size:14px;margin-top:3px">${esc(it.blurb)}</div>`:''}${it.reason?`<div style="font-size:13px;margin-top:3px;color:#335143">Why: ${esc(it.reason)}</div>`:''}${links?`<div style="margin-top:6px;display:flex;gap:14px;font-size:13px">${links}</div>`:''}</div>`;
+    }).join('') : `<p class="why">Places coming soon.</p>`;
+    inner = (s.body?`<p style="margin:0 0 8px">${esc(s.body)}</p>`:'') + cards;
+  } else if(kind==='timeline'){
+    inner = (s.body?`<p style="margin:0 0 8px">${esc(s.body)}</p>`:'') + `<div class="tl">`+items.map((it,n)=>`<div class="tlrow"><span class="tldot"></span><div><div class="tlmeta">${esc(it.label||('Step '+(n+1)))}</div>${it.detail?`<div>${esc(it.detail)}</div>`:''}</div></div>`).join('')+`</div>`;
+  } else if(kind==='checklist'){
+    inner = (s.body?`<p style="margin:0 0 8px">${esc(s.body)}</p>`:'') + items.map(it=>`<div class="row" style="margin-top:6px"><span style="color:var(--muted)">○</span>&nbsp;<span>${esc(it.text)}</span></div>`).join('');
+  } else if(kind==='faq'){
+    inner = (s.body?`<p style="margin:0 0 8px">${esc(s.body)}</p>`:'') + items.map(it=>`<div style="margin-top:10px"><div style="font-weight:600">${esc(it.q)}</div>${it.a?`<div style="color:var(--muted);font-size:14px;margin-top:3px">${esc(it.a)}</div>`:''}</div>`).join('');
+  } else if(kind==='homes'){
+    const cards = items.length ? items.map(it=>{
+      const bb=[it.beds&&esc(it.beds)+' bd',it.baths&&esc(it.baths)+' ba'].filter(Boolean).join(' / ');
+      const line=[it.price?esc(it.price):'',bb].filter(Boolean).join(' · ');
+      const url=secURL(it.link);
+      return `<div class="prop"><div class="addr">${esc(it.address||'Home')}</div>${line?`<div style="color:var(--muted);font-size:14px;margin-top:3px">${line}</div>`:''}${it.note?`<div style="font-size:14px;margin-top:3px">${esc(it.note)}</div>`:''}${url?`<div style="margin-top:6px"><a class="btn small ghost" href="${esc(url)}" target="_blank" rel="noreferrer">View listing</a></div>`:''}</div>`;
+    }).join('') : `<p class="why">Homes coming soon.</p>`;
+    inner = (s.body?`<p style="margin:0 0 8px">${esc(s.body)}</p>`:'') + cards;
+  } else if(kind==='cta'){
+    const cta=s.cta||{}; const ag=c.agent||{}; const label=esc(cta.label||'Get in touch'); let href='',attr='';
+    if(cta.action==='email'&&ag.email){href=`mailto:${esc(ag.email)}`;}
+    else if(cta.action==='phone'&&ag.phone){href=`tel:${esc(String(ag.phone).replace(/[^0-9+]/g,''))}`;}
+    else if(cta.action==='link'&&secURL(cta.href)){href=esc(secURL(cta.href));attr=' target="_blank" rel="noreferrer"';}
+    else {attr=' data-go="messages"';}
+    inner = (s.body?`<p style="margin:0 0 10px">${esc(s.body)}</p>`:'') + `<a class="btn"${href?` href="${href}"`:''}${attr}>${label}</a>`;
+  } else {
+    inner = esc(s.body);
+  }
+  return `<div class="acc"><div class="h${open?' open':''}" data-acc><span>${esc(s.title)}</span><span class="c">+</span></div><div class="b"${open?'':' hidden'}>${inner}</div></div>`;
+}
+
 function pageSection(p) {
   const c=p.content||{}; const steps=(c.nextSteps||[]).filter(s=>s&&s.text); const doneN=steps.filter(s=>s.done).length;
   const secs=(c.sections||[]).filter(s=>s&&s.enabled!==false); const nb=c.neighborhoods||[],kd=c.keyDates||[],docs=c.documents||[];
@@ -1007,7 +1044,7 @@ function pageSection(p) {
   const upd=(c.updates||[]).filter(u=>u&&u.text); const evs=[]; upd.forEach(u=>evs.push({d:u.date||'',k:'Update',t:u.text})); (c.keyDates||[]).forEach(x=>evs.push({d:x.date||'',k:'Date',t:x.label||'Key date'})); (c.tourDays||[]).forEach(x=>{const nn=(x.stops||[]).filter(z=>z&&z.address).length; if(x.date&&nn) evs.push({d:x.date,k:'Tour',t:nn+' home'+(nn===1?'':'s')+' to tour'});}); evs.sort((a,b)=>(b.d||'').localeCompare(a.d||'')); if(evs.length)h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your journey</span><div class="tl">`+evs.map(e=>`<div class="tlrow"><span class="tldot"></span><div><div class="tlmeta">${e.d?esc(fmtDate(e.d)):''} · ${esc(e.k)}</div><div>${esc(e.t)}</div></div></div>`).join('')+`</div></div>`;
   if(steps.length){const pct=Math.round(doneN/steps.length*100);h+=`<div class="card stepcard" style="margin-top:16px"><div class="row"><span class="klabel">Your next steps</span><span class="klabel steptally">${doneN}/${steps.length} done</span></div><div class="bar"><i class="stepfill" style="width:${pct}%"></i></div>`+steps.map((s,si)=>`<button type="button" class="chk stepitem ${s.done?'done':''}" data-stepid="${esc(s.id||('i'+si))}"><span class="m">${s.done?'✓':'○'}</span><span>${esc(s.text)}</span></button>`).join('')+`</div>`;}
   if(nb.length)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Neighborhoods</span><div style="margin-top:6px">${nb.map(n=>`<span class="pill">${esc(n)}</span>`).join('')}</div></div>`;
-  if(secs.length)h+=secs.map((s,i)=>`<div class="acc"><div class="h${i===0?' open':''}" data-acc><span>${esc(s.title)}</span><span class="c">+</span></div><div class="b"${i===0?'':' hidden'}>${esc(s.body)}</div></div>`).join('');
+  if(secs.length)h+=secs.map((s,i)=>renderClientSec(s,i,c)).join('');
   h+=`</div>`; return h;
 }
 function teamRow(name, role, phone){ const tel=(phone||'').replace(/\D/g,''); const t=tel.length===10?'+1'+tel:(tel.length===11&&tel[0]==='1'?'+'+tel:'+'+tel); let h=`<div class="row" style="margin-top:10px"><div><div style="font-weight:600">${esc(name)}</div><div style="color:var(--muted);font-size:13px">${esc(role)}</div></div>`; if(tel.length>=10)h+=`<div style="display:flex;gap:8px"><a class="btn small" href="tel:${t}">Call</a><a class="btn small ghost" href="sms:${t}">Text</a></div>`; return h+`</div>`; }
