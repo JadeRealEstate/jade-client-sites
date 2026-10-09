@@ -1338,9 +1338,10 @@ function renderLanding(slug,page,ag){
   const agentPrimary=/^#[0-9a-fA-F]{6}$/.test(brand.primaryColor||'')?brand.primaryColor:'#335143';
   const agentAccent=/^#[0-9a-fA-F]{6}$/.test(brand.accentColor||'')?brand.accentColor:agentPrimary;
   const jadeAccent=/^#[0-9a-fA-F]{6}$/.test(d.accent||'')?d.accent:'#335143';
-  const bg = mode==='agent' ? agentPrimary : '#2c4a3b';
-  const btn = mode==='agent' ? agentAccent : '#335143';
-  const chip = mode==='agent' ? agentAccent : '#b08d57';
+  const cw=(mode==='agent'&&d.colorway&&/^#[0-9a-fA-F]{6}$/.test(d.colorway.bg||''))?d.colorway:null;
+  const bg = mode==='agent' ? (cw?cw.bg:agentPrimary) : '#2c4a3b';
+  const btn = mode==='agent' ? (cw&&/^#[0-9a-fA-F]{6}$/.test(cw.btn||'')?cw.btn:agentAccent) : '#335143';
+  const chip = mode==='agent' ? (cw?((/^#[0-9a-fA-F]{6}$/.test(cw.chip||'')?cw.chip:cw.btn)||agentAccent):agentAccent) : '#b08d57';
   // identity
   const displayName=esc(d.displayName||brand.displayName||brand.name||ag.name||'Jade Real Estate');
   const title=esc(d.title||brand.title||'REALTOR®');
