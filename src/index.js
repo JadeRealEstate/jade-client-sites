@@ -754,7 +754,7 @@ function renderQuestionnairePage(opts) {
   const markHtml = brandOn ? (logo ? `<img src="${escH(logo)}" alt="" style="height:32px;width:auto;max-width:180px;object-fit:contain">` : `<span class="mark">${escH(brandName || agentName || '')}</span>`) : `<span class="mark">Jade</span>`;
   const body = secs.map((s,i)=>section(s,i,total)).join('');
   const schemaJson = JSON.stringify(schema).replace(/</g,'\\u003c');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23335143%27%2F%3E%3Ctext%20x%3D%2750%%27%20y%3D%2753%%27%20dominant-baseline%3D%27central%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%26quot%3BTimes%20New%20Roman%26quot%3B%2Cserif%27%20font-style%3D%27italic%27%20font-size%3D%2746%27%20font-weight%3D%27400%27%20fill%3D%27%23f2efeb%27%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escH(heading)} · Jade Real Estate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -990,7 +990,7 @@ function styleFontsLink(style) { const d = STYLE_DEFS[styleKey(style)]; return `
 function styleOverrideCss(style) { const d = STYLE_DEFS[styleKey(style)]; return d.css ? `<style>${d.css}</style>` : ''; }
 
 function shell(inner, title, style) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>` +
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23335143%27%2F%3E%3Ctext%20x%3D%2750%%27%20y%3D%2753%%27%20dominant-baseline%3D%27central%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%26quot%3BTimes%20New%20Roman%26quot%3B%2Cserif%27%20font-style%3D%27italic%27%20font-size%3D%2746%27%20font-weight%3D%27400%27%20fill%3D%27%23f2efeb%27%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>` +
     styleFontsLink(style) +
     `<style>${CSS}</style>${styleOverrideCss(style)}</head><body>${inner}</body></html>`;
 }
@@ -1451,7 +1451,7 @@ function renderLanding(slug,page,ag){
   const sectionsHtml=servicesHtml+aboutHtml+testiHtml+faqHtml+nextHtml+bookHtml;
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
-  const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23335143%27%2F%3E%3Ctext%20x%3D%2750%%27%20y%3D%2753%%27%20dominant-baseline%3D%27central%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%26quot%3BTimes%20New%20Roman%26quot%3B%2Cserif%27%20font-style%3D%27italic%27%20font-size%3D%2746%27%20font-weight%3D%27400%27%20fill%3D%27%23f2efeb%27%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${displayName} · ${page.title?esc(page.title):'Jade Real Estate'}</title>
 <style>
 :root{--bg:${bg};--btn:${btn};--chip:${chip}}
