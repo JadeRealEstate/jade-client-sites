@@ -859,7 +859,7 @@ const SB = 'https://fcgarmtbmdsgkcrvmwjv.supabase.co';
 const ANON = 'sb_publishable_k5AzjS458cQ5CRzgZP_jbg_zTe3tQyx';
 const TYPE_BY_SLUG = { buyer: 'buyer_hub', seller: 'seller_hub', listing: 'listing_presentation', closing: 'under_contract', 'buyer-consult': 'buyer_consult' };
 const SLUG_BY_TYPE = { buyer_hub: 'buyer', seller_hub: 'seller', listing_presentation: 'listing', under_contract: 'closing', buyer_consult: 'buyer-consult' };
-const TAB_LABEL = { buyer_hub: 'Your Search', seller_hub: 'Your Sale', listing_presentation: 'Listing', under_contract: 'Closing', buyer_consult: 'Consultation' };
+const TAB_LABEL = { buyer_hub: 'The Process', seller_hub: 'Your Sale', listing_presentation: 'Listing', under_contract: 'Closing', buyer_consult: 'Consultation' };
 function slugOf(p){ return p.page_type==='custom' ? ((p.content&&p.content.slug)||'page') : (SLUG_BY_TYPE[p.page_type]||'page'); }
 function labelOf(p){ return p.page_type==='custom' ? ((p.content&&(p.content.tabLabel||p.content.headline))||'Page') : (TAB_LABEL[p.page_type]||'Page'); }
 function txType(p){ return (p.transactions && p.transactions.type) || (/(seller|listing|under_contract)/.test(p.page_type||'') ? 'seller' : 'buyer'); }
@@ -1090,7 +1090,7 @@ function todaySection(pages, clientName, stage, lender){
   if(tour)h+=`<div class="tile" data-go="tour">Tour<div class="k">Rate homes</div></div>`;
   h+=`<div class="tile" data-go="messages">Messages<div class="k">Reach your agent</div></div><div class="tile" data-go="settings">Settings<div class="k">Notifications</div></div></div></div>`; return h;
 }
-function homesSection(allHomes){ let h=`<div data-sec="homes" hidden><h1>Homes</h1><p class="sub">Every home you’ve toured or we’ve added — rate each, and your group’s favorites rise to the top.</p><div style="margin-top:14px">`+allHomes.map(propCard).join('')+`</div></div>`; return h; }
+function homesSection(allHomes, fb){ const ranked=(allHomes||[]).slice().sort((a,b)=>avgScore(fb,(b.id||b.address))-avgScore(fb,(a.id||a.address))); let h=`<div data-sec="homes" hidden><h1>Homes</h1><p class="sub">Every home you’ve toured or we’ve added — ranked by your group. Loved homes rise to the top.</p><div style="margin-top:14px">`+ranked.map(propCard).join('')+`</div></div>`; return h; }
 function tourSection(pages, clientSlug, fb){
   const td=tourDaysOf(pages); if(!td) return ''; const pageSlug=SLUG_BY_TYPE[td.page.page_type]||'buyer';
   const today=todayStr(); const upcoming=td.days.filter(d=>(d.date||'')>=today); const past=td.days.filter(d=>(d.date||'')<today);
@@ -1098,7 +1098,7 @@ function tourSection(pages, clientSlug, fb){
   let h=`<div data-sec="tour" hidden><h1>Your tours</h1><p class="sub">${totalUp?totalUp+' home'+(totalUp===1?'':'s')+' coming up — rate each as you go.':'Your showings, and how you rated them.'}</p>`;
   h+=`<p class="why" style="margin-top:6px">Rate each home below. Your group sees your take based on your sharing setting — change it under Settings.</p>`;
   upcoming.forEach(d=>{ const di=td.days.indexOf(d); const meta=[d.time?('Starts '+esc(d.time)):'',d.meetAt?('Meet at '+esc(d.meetAt)):''].filter(Boolean).join(' \u00b7 '); h+=`<div class="daysec"><div class="row"><span class="klabel">${esc(fmtDate(d.date))}</span><span class="klabel">${d.stops.length} home${d.stops.length===1?'':'s'}</span></div>`+(meta?`<p class="why" style="margin-top:4px">${meta}</p>`:'')+(d.instructions?`<div class="card" style="margin-top:10px"><span class="klabel">From your agent</span><div style="margin-top:4px">${esc(d.instructions)}</div></div>`:'')+`<div class="card" style="margin-top:10px"><span class="klabel">Add this day to your calendar</span>`+calLinksDay(d,clientSlug,pageSlug,di)+`</div>`+d.stops.map(propCard).join('')+`</div>`; });
-  if(past.length){ let ps=[]; past.forEach(d=>d.stops.forEach(s=>ps.push(s))); ps.sort((a,b)=>avgScore(fb,b.id||b.address)-avgScore(fb,a.id||a.address)); h+=`<div class="daysec"><span class="klabel">Past showings</span><p class="why" style="margin-top:4px">Homes you loved rise to the top.</p>`+ps.map(propCard).join('')+`</div>`; }
+  if(!upcoming.length){ h+=`<p class="why" style="margin-top:10px">No upcoming tours scheduled right now. Homes you’ve already seen live on the Homes tab, ranked by your group.</p>`; }
   h+=`</div>`; return h;
 }
 function messagesSection(a){return `<div data-sec="messages" hidden><h1>Group chat</h1><p class="sub">Everyone on this hub — and ${esc(a||'your agent')} — can see and post here.</p><div class="card" style="margin-top:16px"><div class="thread" id="chatThread"></div><form id="chatForm" style="margin-top:12px"><textarea id="cBody" placeholder="Message your group and agent..."></textarea><div style="margin-top:10px"><button class="btn" type="submit">Send</button><span class="status" id="cStatus"></span></div></form></div></div>`;}
@@ -1180,7 +1180,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   body+=todaySection(pages,clientName,stage,lender);
   for(const p of visiblePages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
-  if(allHomes.length)body+=homesSection(allHomes);
+  if(allHomes.length)body+=homesSection(allHomes, fb);
   if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
   if(showAgent)body+=agentSection(agent);
   body+=messagesSection(agent.name);
