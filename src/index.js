@@ -767,6 +767,7 @@ body{margin:0;background:var(--cream);color:var(--ink);font-family:Montserrat,sy
 .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0 18px}
 .brand .mark{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:22px;color:var(--jade)}
 .brand .who{font-size:12px;color:var(--jade2)}
+.brandlogo{height:26px;width:auto;max-width:180px;display:block;object-fit:contain}
 .card{background:var(--white);border:1px solid rgba(166,182,164,.5);border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(21,32,26,.06)}
 .prog{height:6px;background:var(--cream);border-radius:99px;overflow:hidden;margin-bottom:18px}
 .prog > i{display:block;height:100%;background:var(--jade);width:0;transition:width .25s}
@@ -877,6 +878,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .nav{position:sticky;top:0;z-index:20;background:rgba(245,242,236,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .nav .in{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:12px 16px}
 .brand{font-family:'DM Serif Display',Georgia,serif;font-style:italic;color:var(--jade);font-size:20px;white-space:nowrap}
+.brandlogo{height:28px;width:auto;max-width:190px;display:block;object-fit:contain}
 .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tab{border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:7px 12px;border-radius:8px;white-space:nowrap;cursor:pointer}
 .tab:hover{background:rgba(166,182,164,.18)}.tab.active{color:var(--jade);background:rgba(51,81,67,.10)}
@@ -1151,7 +1153,11 @@ function offersSection(sc){
   of.forEach(o=>{ h+=`<div class="prop"><div class="row"><span class="addr">${esc(o.amount||'Offer')}</span>${o.by?`<span style="color:var(--muted);font-size:13px">respond by ${esc(fmtDate(o.by))}</span>`:''}</div>${o.terms?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(o.terms)}</div>`:''}</div>`; });
   return h+`</div>`;
 }
-function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage){
+function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand){
+  brand = brand || {};
+  const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square)) || brand.logoUrl || '';
+  const _brandName = brand.business || brand.displayName || '';
+  const brandMark = (_logoUrl && /^https?:\/\//i.test(_logoUrl)) ? ('<img class="brandlogo" src="'+esc(_logoUrl)+'" alt="'+esc(_brandName||'Agent')+'">') : ('<span class="brand">'+esc(_brandName||'Jade')+'</span>');
   const clientName=(pages[0]&&pages[0].client_name)||'there';
   const agent=(pages.find(p=>p.content&&p.content.agent)||{content:{}}).content.agent||{};
   const showAgent=!pages.some(p=>p.content&&p.content.showAgent===false);
@@ -1181,9 +1187,9 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   let body;
   if(dualJ){
     const jsw=`<div class="jsw"><button class="jbtn buy${initJ==='buy'?' on':''}" data-jbtn="buy"><span class="ji">\u2302</span> Buying a home</button><button class="jbtn sell${initJ==='sell'?' on':''}" data-jbtn="sell"><span class="ji">\u21E7</span> Selling my home</button></div>`;
-    body=`<div class="nav"><div class="in jrow"><span class="brand">Jade</span>${jsw}</div><div class="in tabline"><div class="tabs" data-journey="${initJ}">${tabs}</div></div></div><div class="wrap">`;
+    body=`<div class="nav"><div class="in jrow">${brandMark}${jsw}</div><div class="in tabline"><div class="tabs" data-journey="${initJ}">${tabs}</div></div></div><div class="wrap">`;
   } else {
-    body=`<div class="nav"><div class="in"><span class="brand">Jade</span><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
+    body=`<div class="nav"><div class="in">${brandMark}<div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
   if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
   body+=todaySection(pages,clientName,stage,lender);
@@ -1234,9 +1240,10 @@ var pf=document.getElementById('prefForm');if(pf)pf.addEventListener('submit',fu
 setInterval(loadChat,20000);
 })();
 </script>`;
-  const _style=(pages.find(p=>p.content&&p.content.style)||{content:{}}).content.style||'jade_standard';
+  const _style=(pages.find(p=>p.content&&p.content.style)||{content:{}}).content.style||brand.style||'jade_standard';
   // Agent-chosen colorway brands the whole hub (primary + accent). Falls back to Jade green.
-  const _cw=(pages.find(p=>p.content&&p.content.colorway&&/^#[0-9a-fA-F]{6}$/.test((p.content.colorway.bg)||''))||{content:{}}).content.colorway;
+  let _cw=(pages.find(p=>p.content&&p.content.colorway&&/^#[0-9a-fA-F]{6}$/.test((p.content.colorway.bg)||''))||{content:{}}).content.colorway;
+  if(!_cw && /^#[0-9a-fA-F]{6}$/.test(brand.primaryColor||'')){ _cw={ bg:brand.primaryColor, btn:(/^#[0-9a-fA-F]{6}$/.test(brand.secondaryColor||'')?brand.secondaryColor:brand.primaryColor), chip:(/^#[0-9a-fA-F]{6}$/.test(brand.accentColor||'')?brand.accentColor:brand.primaryColor) }; }
   let _brandStyle='';
   if(_cw){ const bg=_cw.bg; const chip=/^#[0-9a-fA-F]{6}$/.test(_cw.chip||'')?_cw.chip:(/^#[0-9a-fA-F]{6}$/.test(_cw.btn||'')?_cw.btn:bg); _brandStyle='<style>:root{--jade:'+esc(bg)+';--gold:'+esc(chip)+'}</style>'; }
   return htmlResp(shell(_brandStyle+body, clientName+' · Jade Real Estate', _style),200);
@@ -1610,7 +1617,8 @@ export default {
       const em=((_user&&_user.email)||'').toLowerCase();
       const meName=(_user&&_user.user_metadata&&(_user.user_metadata.full_name||_user.user_metadata.name))||(em?em.split('@')[0].replace(/^./,c=>c.toUpperCase()):'You');
       const [fb,vis,msgs]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok)]);
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage);
+      const _agb=await fetchAgentCard((pages[0]&&pages[0].agent_id)||'');
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,(_agb&&_agb.brand)||{});
     }catch(e){ return notFound(); }
   },
 };
