@@ -1163,9 +1163,10 @@ function offersSection(sc){
 }
 function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand){
   brand = brand || {};
-  const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square)) || brand.logoUrl || '';
-  const _brandName = brand.business || brand.displayName || '';
-  const brandMark = (_logoUrl && /^https?:\/\//i.test(_logoUrl)) ? ('<img class="brandlogo" src="'+esc(_logoUrl)+'" alt="'+esc(_brandName||'Agent')+'">') : ('<span class="brand">'+esc(_brandName||'Jade')+'</span>');
+  const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
+  const _brandName = brand.business || brand.displayName || brand.fullName || '';
+  const _logoOk = _logoUrl && /^(https?:|data:image\/|\/\/|\/)/i.test(_logoUrl);
+  const brandMark = _logoOk ? ('<img class="brandlogo" src="'+esc(_logoUrl)+'" alt="'+esc(_brandName||'Agent')+'">') : ('<span class="brand">'+esc(_brandName||'Jade')+'</span>');
   const clientName=(pages[0]&&pages[0].client_name)||'there';
   const agent=(pages.find(p=>p.content&&p.content.agent)||{content:{}}).content.agent||{};
   const showAgent=!pages.some(p=>p.content&&p.content.showAgent===false);
@@ -1627,7 +1628,8 @@ export default {
       const meName=(_user&&_user.user_metadata&&(_user.user_metadata.full_name||_user.user_metadata.name))||(em?em.split('@')[0].replace(/^./,c=>c.toUpperCase()):'You');
       const [fb,vis,msgs]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok)]);
       const _agb=await fetchAgentCard((pages[0]&&pages[0].agent_id)||'');
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,(_agb&&_agb.brand)||{});
+      const _brand=Object.assign({},(_agb&&_agb.brand)||{}); if(_agb&&_agb.name&&!_brand.fullName)_brand.fullName=_agb.name;
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand);
     }catch(e){ return notFound(); }
   },
 };
