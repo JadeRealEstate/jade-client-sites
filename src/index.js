@@ -1319,8 +1319,8 @@ async function handleQuestionnaire(parts){
   if(!schema) schema=JADE_STANDARD[type];
   let agentName='', brand=null;
   try{
-    const pr=await fetch(`${SB}/rest/v1/profiles?id=eq.${agentId}&select=full_name,brand_profile`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
-    const prs=await pr.json(); if(Array.isArray(prs)&&prs[0]){ agentName=prs[0].full_name||''; brand=prs[0].brand_profile||null; }
+    const pr=await fetch(`${SB}/rest/v1/rpc/agent_brand_card`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_id:agentId})});
+    const pb=await pr.json(); if(pb&&typeof pb==='object'&&!Array.isArray(pb)){ agentName=pb.fullName||''; brand=pb; }
   }catch(e){}
   return htmlResp(renderQuestionnairePage({agentId,type,schema,templateId,agentName,brand,sb:SB,anon:ANON}));
 }
@@ -1353,8 +1353,8 @@ async function fetchLanding(slug){
 }
 async function fetchAgentCard(agentId){
   try{
-    const r=await fetch(`${SB}/rest/v1/profiles?id=eq.${agentId}&select=full_name,brand_profile`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
-    const rows=await r.json(); const p=(Array.isArray(rows)&&rows[0])||{}; return {name:p.full_name||'',brand:p.brand_profile||{}};
+    const r=await fetch(`${SB}/rest/v1/rpc/agent_brand_card`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_id:agentId})});
+    const b=await r.json(); const brand=(b&&typeof b==='object'&&!Array.isArray(b))?b:{}; return {name:brand.fullName||'',brand};
   }catch(e){ return {name:'',brand:{}}; }
 }
 async function fetchResources(ids){
