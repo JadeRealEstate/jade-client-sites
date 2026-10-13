@@ -1242,7 +1242,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
     body=`<div class="nav"><div class="in">${brandMark}<div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
   if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
-  body+=todaySection(pages,clientName,stage,lender,agent,brand&&brand.headshotUrl,initJ);
+  body+=todaySection(pages,clientName,stage,lender,Object.assign({},agent,{name:agent.name||(brand&&(brand.displayName||brand.fullName||brand.business))||''}),brand&&brand.headshotUrl,initJ);
   for(const p of visiblePages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
   if(allHomes.length)body+=homesSection(allHomes, fb);
