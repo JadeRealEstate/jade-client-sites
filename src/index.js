@@ -1202,6 +1202,25 @@ function offersSection(sc){
   of.forEach(o=>{ h+=`<div class="prop"><div class="row"><span class="addr">${esc(o.amount||'Offer')}</span>${o.by?`<span style="color:var(--muted);font-size:13px">respond by ${esc(fmtDate(o.by))}</span>`:''}</div>${o.terms?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(o.terms)}</div>`:''}</div>`; });
   return h+`</div>`;
 }
+function docsCount(pages){ let n=0; for(const p of pages){((p.content||{}).documents||[]).forEach(d=>{if(d&&d.name)n++;});} return n; }
+function docsSection(pages, agentName){
+  const docs=[];
+  for(const p of pages){const c=p.content||{};(c.documents||[]).forEach(d=>{if(d&&d.name)docs.push({name:d.name,type:d.type||'',url:d.url||'',from:labelOf(p)});});}
+  if(!docs.length) return '';
+  let h=`<div data-sec="docs" hidden><h1>Documents</h1><p class="sub">Everything ${esc(agentName||'your agent')} has shared with you, in one place.</p><div style="margin-top:16px">`;
+  docs.forEach(d=>{ const u=(d.url&&/^(https?:|blob:)/i.test(d.url))?d.url:''; h+=`<div class="card" style="margin-top:10px"><div class="row" style="align-items:center;gap:12px"><div style="min-width:0"><div style="font-weight:700">${esc(d.name)}</div>`+((d.type||d.from)?`<div style="color:var(--muted);font-size:13px">${esc([d.type,d.from].filter(Boolean).join(' · '))}</div>`:'')+`</div>`+(u?`<a class="btn small ghost" href="${esc(u)}" target="_blank" rel="noreferrer">Open</a>`:`<span style="color:var(--muted);font-size:13px">Shared by your agent</span>`)+`</div></div>`; });
+  return h+`</div></div>`;
+}
+function infoHas(pages, lender, agent){ let kd=0; for(const p of pages){((p.content||{}).keyDates||[]).forEach(d=>{if(d&&d.label)kd++;});} const hasTeam=(agent&&(agent.name||agent.phone))||(lender&&(lender.name||lender.phone)); return kd>0||hasTeam; }
+function infoSection(pages, lender, agent){
+  let keyDates=[]; for(const p of pages){((p.content||{}).keyDates||[]).forEach(d=>{if(d&&d.label)keyDates.push(d);});}
+  const hasTeam=(agent&&(agent.name||agent.phone))||(lender&&(lender.name||lender.phone));
+  if(!keyDates.length && !hasTeam) return '';
+  let h=`<div data-sec="info" hidden><h1>Key info</h1><p class="sub">The details that matter for your transaction, at a glance.</p>`;
+  if(keyDates.length){ h+=`<div class="card" style="margin-top:14px"><span class="klabel">Important dates</span>`+keyDates.map(d=>`<div class="row" style="margin-top:10px"><span style="font-weight:600">${esc(d.label)}</span><span style="color:var(--muted)">${d.date?esc(fmtDate(d.date)):''}</span></div>`).join('')+`</div>`; }
+  if(hasTeam){ h+=`<div class="card" style="margin-top:14px"><span class="klabel">Your team</span>`+((agent&&(agent.name||agent.phone))?teamRow(agent.name||'Your agent','Agent',agent.phone):'')+((lender&&(lender.name||lender.phone))?teamRow(lender.name||'Versatile Lending','Lender',lender.phone):'')+`</div>`; }
+  return h+`</div>`;
+}
 function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand){
   brand = brand || {};
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
@@ -1215,6 +1234,8 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   const td=tourDaysOf(pages);
   const stage=(pages[0]&&pages[0].stage)||'active';
   const lender={name:(pages[0]&&pages[0].lender_name)||'',phone:(pages[0]&&pages[0].lender_phone)||''};
+  const agentNm=agent.name||(brand&&(brand.displayName||brand.fullName||brand.business))||'';
+  const agentForUi=Object.assign({},agent,{name:agentNm});
   const listings=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const id=s.id||s.address;if(!seen[id]){seen[id]=1;out.push({id,address:s.address});}}));pages.forEach(p=>((p.content&&p.content.homes)||[]).forEach(hh=>{const id=hh.id||hh.address;if(id&&!seen[id]){seen[id]=1;out.push({id,address:hh.address});}}));return out;})();
   const allHomes=(function(){const seen={},out=[];if(td)td.days.forEach(d=>d.stops.forEach(s=>{const k=(s.address||'').trim().toLowerCase();if(k&&!seen[k]){seen[k]=1;out.push(s);}}));pages.forEach(p=>((p.content&&p.content.homes)||[]).forEach(hh=>{const k=(hh.address||'').trim().toLowerCase();if(k&&!seen[k]){seen[k]=1;out.push(hh);}}));return out;})();
   const sellerPage=pages.find(p=>p.hub_type==='seller'||/seller_hub|listing_presentation|under_contract/.test(p.page_type||'')); const seller=!!sellerPage; const sc=(sellerPage&&sellerPage.content)||{};
@@ -1232,6 +1253,8 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(allHomes.length)tabs+=`<button class="tab tab-buy" data-tab="homes" data-journey="buy">Homes</button>`;
   if(seller)tabs+=`<button class="tab tab-sell" data-tab="activity" data-journey="sell">Activity</button><button class="tab tab-sell" data-tab="showings" data-journey="sell">Showings</button><button class="tab tab-sell" data-tab="offers" data-journey="sell">Offers</button>`;
   if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent" data-journey="both">Your Agent</button>`;
+  if(docsCount(pages))tabs+=`<button class="tab" data-tab="docs" data-journey="both">Documents</button>`;
+  if(infoHas(pages,lender,agentForUi))tabs+=`<button class="tab" data-tab="info" data-journey="both">Key info</button>`;
   tabs+=`<button class="tab" data-tab="messages" data-journey="both">Messages</button><button class="tab" data-tab="settings" data-journey="both">Settings</button>`;
   const initJ=(/^(activity|showings|offers)$/.test(openTab||'')||(!hasBuyJ&&hasSellJ))?'sell':'buy';
   let body;
@@ -1242,12 +1265,14 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
     body=`<div class="nav"><div class="in">${brandMark}<div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
   if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
-  body+=todaySection(pages,clientName,stage,lender,Object.assign({},agent,{name:agent.name||(brand&&(brand.displayName||brand.fullName||brand.business))||''}),brand&&brand.headshotUrl,initJ);
+  body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
   for(const p of visiblePages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
   if(allHomes.length)body+=homesSection(allHomes, fb);
   if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
   if(showAgent)body+=agentSection(agent);
+  body+=docsSection(pages,agentNm);
+  body+=infoSection(pages,lender,agentForUi);
   body+=messagesSection(agent.name);
   body+=settingsSection(vis,myEmail);
   body+=`<div class="foot">${esc(agent.name||'')}${agent.phone?' · '+esc(agent.phone):''}<br><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span><br><a href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;" style="color:var(--muted);font-size:12px;display:inline-block;margin-top:6px">Sign out</a></div></div>`;
