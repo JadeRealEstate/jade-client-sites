@@ -927,7 +927,15 @@ h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;c
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;font-weight:600;color:var(--ink)}
 .tile:hover{border-color:var(--jade)}.tile .k{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
 .stop{display:flex;gap:12px;margin:12px 0}.stop .t{font-weight:700;color:var(--jade);width:70px;flex:none;font-size:13px}
-.calrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.calrow a{border:1px solid var(--jade);color:var(--jade);text-decoration:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+.calrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.calrow a{border:1px solid var(--jade);color:var(--jade);text-decoration:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}.calrow a.calprim{background:var(--jade);color:#fff}
+.agentbar{margin:34px 0 10px;border-top:1px solid var(--line);padding-top:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.agentbar .abimg{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none}
+.agentbar .abname{font-weight:700;font-size:15px;color:var(--ink)}
+.agentbar .absub{color:var(--muted);font-size:13px}
+.agentbar .abbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.abbtn{display:inline-block;background:var(--jade);color:#fff;border-radius:10px;padding:10px 16px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap}
+.abbtn.ghost{background:transparent;border:1px solid var(--jade);color:var(--jade)}
+@media(max-width:600px){.agentbar .abbtns{margin-left:0;width:100%}.abbtn{flex:1;text-align:center}}
 label.f{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 input[type=text],input[type=email],input[type=password],textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--surface)}
 textarea{min-height:96px;resize:vertical}
@@ -1052,7 +1060,7 @@ function calLinksDay(day, clientSlug, pageSlug, di) {
   const details=(day.meetAt?('Meet: '+encodeURIComponent(day.meetAt)+'%0A'):'')+(day.instructions?(encodeURIComponent(day.instructions)+'%0A%0A'):'')+'Your showing itinerary:%0A'+stops.map((s,i)=>encodeURIComponent((i+1)+'. '+s.address+(s.note?' — '+s.note:''))).join('%0A'); const loc=encodeURIComponent(day.meetAt||stops[0].address);
   const g='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+stampLocal(day.date,stops[0].t)+'/'+stampLocal(day.date,endT)+'&details='+details+'&location='+loc;
   const ms='https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject='+encodeURIComponent(title)+'&startdt='+isoLocal(day.date,stops[0].t)+'&enddt='+isoLocal(day.date,endT)+'&location='+loc+'&body='+details;
-  return `<div class="calrow"><a href="/${clientSlug}/${pageSlug}.ics?d=${di}">Apple Calendar</a><a href="${g}" target="_blank" rel="noreferrer">Google</a><a href="${ms}" target="_blank" rel="noreferrer">Outlook</a></div>`;
+  return `<div class="calrow"><a class="calprim" href="/${clientSlug}/${pageSlug}.ics?d=${di}">📅 Add to calendar</a><a href="${g}" target="_blank" rel="noreferrer">Google Calendar</a></div>`;
 }
 const icsEsc=(t)=>String(t||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
 function buildICS(c, dOnly){ const days=daysFromContent(c); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jade Real Estate//EN','CALSCALE:GREGORIAN']; const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z'); let uid=0;
@@ -1254,7 +1262,6 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(seller)tabs+=`<button class="tab tab-sell" data-tab="activity" data-journey="sell">Activity</button><button class="tab tab-sell" data-tab="showings" data-journey="sell">Showings</button><button class="tab tab-sell" data-tab="offers" data-journey="sell">Offers</button>`;
   if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent" data-journey="both">Your Agent</button>`;
   if(docsCount(pages))tabs+=`<button class="tab" data-tab="docs" data-journey="both">Documents</button>`;
-  if(infoHas(pages,lender,agentForUi))tabs+=`<button class="tab" data-tab="info" data-journey="both">Key info</button>`;
   tabs+=`<button class="tab" data-tab="messages" data-journey="both">Messages</button><button class="tab" data-tab="settings" data-journey="both">Settings</button>`;
   const initJ=(/^(activity|showings|offers)$/.test(openTab||'')||(!hasBuyJ&&hasSellJ))?'sell':'buy';
   let body;
@@ -1272,10 +1279,15 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
   if(showAgent)body+=agentSection(agent);
   body+=docsSection(pages,agentNm);
-  body+=infoSection(pages,lender,agentForUi);
   body+=messagesSection(agent.name);
   body+=settingsSection(vis,myEmail);
-  body+=`<div class="foot">${esc(agent.name||'')}${agent.phone?' · '+esc(agent.phone):''}<br><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span><br><a href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;" style="color:var(--muted);font-size:12px;display:inline-block;margin-top:6px">Sign out</a></div></div>`;
+  const cEmail=((agent.email||'').trim())||((brand&&brand.email)||'');
+  const cPhoneRaw=((agent.phone||'').trim())||((brand&&brand.phone)||'');
+  const cTel=(cPhoneRaw||'').replace(/\D/g,''); const cT=cTel.length===10?'+1'+cTel:(cTel.length===11&&cTel[0]==='1'?'+'+cTel:'+'+cTel);
+  const cFirst=esc((agentNm||'your agent').split(' ')[0]||'your agent');
+  const cHead=(brand&&brand.headshotUrl)||'';
+  if(cEmail||cTel.length>=10){ body+=`<div class="agentbar">`+(cHead?`<img class="abimg" src="${esc(cHead)}" alt="">`:'')+`<div><div class="abname">${esc(agentNm||'Your agent')}</div><div class="absub">Here to help — reach out anytime.</div></div><div class="abbtns">`+(cTel.length>=10?`<a class="abbtn" href="sms:${cT}">Text ${cFirst}</a><a class="abbtn ghost" href="tel:${cT}">Call</a>`:'')+(cEmail?`<a class="abbtn ghost" href="mailto:${esc(cEmail)}">Email ${cFirst}</a>`:'')+`</div></div>`; }
+  body+=`<div class="foot"><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span> · Equal Housing Opportunity<br><a href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;" style="color:var(--muted);font-size:12px;display:inline-block;margin-top:6px">Sign out</a></div></div>`;
   const tel=(agent.phone||'').replace(/\D/g,''); const telFmt=tel.length===10?('+1'+tel):(tel.length===11&&tel[0]==='1'?('+'+tel):('+'+tel)); const fn=esc((agent.name||'your agent').split(' ')[0]);
   if(tel.length>=10)body+=`<div class="contactbar"><a class="call" href="tel:${telFmt}">Call ${fn}</a><a class="text" href="sms:${telFmt}">Text ${fn}</a></div>`;
   body+=`<script>
