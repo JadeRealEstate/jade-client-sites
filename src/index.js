@@ -876,16 +876,17 @@ const CSS = `
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-apple-system,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
 .nav{position:sticky;top:0;z-index:20;background:rgba(245,242,236,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.nav .in{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:12px 16px}
-.brand{font-family:'DM Serif Display',Georgia,serif;font-style:italic;color:var(--jade);font-size:20px;white-space:nowrap}
-.brandlogo{height:28px;width:auto;max-width:190px;display:block;object-fit:contain}
+.nav .in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:24px;padding:15px 22px}
+.brand{font-family:'DM Serif Display',Georgia,serif;font-style:italic;color:var(--jade);font-size:25px;white-space:nowrap}
+.brandlogo{height:40px;width:auto;max-width:230px;display:block;object-fit:contain}
 .tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
-.tab{border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:7px 12px;border-radius:8px;white-space:nowrap;cursor:pointer}
-.tab:hover{background:rgba(166,182,164,.18)}.tab.active{color:var(--jade);background:rgba(51,81,67,.10)}
+.tab{border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:12px 14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
+.tab:hover{color:var(--ink)}.tab.active{color:var(--jade);border-bottom-color:var(--jade)}
 .tab-buy::before,.tab-sell::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .tab-buy::before{background:var(--jade)}
 .tab-sell::before{background:var(--gold)}
-.tab-sell.active{color:var(--gold);background:rgba(176,141,87,.12)}
+.tab-sell.active{color:var(--gold);border-bottom-color:var(--gold)}
+@media(max-width:600px){.nav .in{padding:12px 14px;gap:14px}.brandlogo{height:33px}.brand{font-size:21px}.tab{font-size:14px;padding:10px 11px}.wrap{padding:20px 14px 104px}.upnext{padding:18px 18px}.upnext .big{font-size:22px}}
 .jrow{padding-bottom:6px}
 .jsw{display:flex;gap:8px;flex-wrap:wrap}
 .jbtn{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-size:14px;font-weight:700;color:var(--muted);padding:8px 15px;border-radius:99px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
@@ -896,7 +897,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .tabline{padding-top:0;padding-bottom:10px}
 .tabs[data-journey="buy"] .tab[data-journey="sell"]{display:none}
 .tabs[data-journey="sell"] .tab[data-journey="buy"]{display:none}
-.wrap{max-width:900px;margin:0 auto;padding:22px 16px 104px}
+.wrap{max-width:980px;margin:0 auto;padding:26px 22px 104px}
 h1{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(26px,5vw,38px);margin:0;line-height:1.06}
 h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;color:var(--jade);margin:0}
 .sub{color:var(--muted);margin:8px 0 0}
@@ -990,7 +991,7 @@ textarea{min-height:96px;resize:vertical}
 .nextlist .nl:first-child{border-top:0}
 .nextlist .nc{width:19px;height:19px;border-radius:50%;border:2px solid var(--sage);flex:none}
 .nextlist .nt{flex:1;font-weight:600;min-width:0}
-.nextlist .na{color:var(--muted)}
+.nextlist .nsar{color:var(--muted);font-size:17px}
 .ovcards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
 .ovlink{cursor:pointer;transition:border-color .15s}.ovlink:hover{border-color:var(--jade)}
 .notecard{display:flex;gap:14px;align-items:flex-start}
@@ -1140,7 +1141,7 @@ function todaySection(pages, clientName, stage, lender, agent, brandHead, kind){
   else if(latestUpdate){ band={k:'Latest',big:'A note from your agent',meta:latestUpdate.text,btn:pages[0]?{label:'Open',go:'p-'+slugOf(pages[0])}:null}; }
   else { band={k:'Welcome',big:(kind==='sell'?'Your home sale starts here':'Your home search starts here'),meta:'Everything we’re working on together lives in one place.',btn:pages[0]?{label:'Get started',go:'p-'+slugOf(pages[0])}:null}; }
   h+=`<div class="upnext"><div style="min-width:0"><div class="k">${esc(band.k)}</div><div class="big">${esc(band.big)}</div><div class="meta">${esc(band.meta)}</div></div>`+(band.btn?`<div class="cta"><a class="btnw" data-go="${esc(band.btn.go)}">${esc(band.btn.label)} →</a></div>`:'')+`</div>`;
-  if(openList.length){ h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="p-${esc(st.slug)}"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="na">→</span></div>`).join('')+`</div></div>`; }
+  if(openList.length){ h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="p-${esc(st.slug)}"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="nsar">→</span></div>`).join('')+`</div></div>`; }
   const guide=pages.find(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
   const col1 = guide?`<div class="card ovlink" data-go="p-${esc(slugOf(guide))}"><span class="klabel">Explore</span><div class="big" style="font-size:20px">${esc(labelOf(guide))}</div><div class="why" style="margin-top:4px">Your guide — tap to open.</div></div>`:'';
   const first=esc((agent.name||'your agent').split(' ')[0]);
