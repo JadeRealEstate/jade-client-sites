@@ -739,8 +739,8 @@ function renderQuestionnairePage(opts) {
   const heading = type === 'seller' ? 'Seller Questionnaire' : 'Buyer Questionnaire';
   const who = agentName ? `${escH(agentName)} · Jade Real Estate` : 'Jade Real Estate';
   const b = brand || {};
-  const brandOn = !!b.brandQuestionnaires || !!(schema && schema.colorway && HEX6(schema.colorway.bg));
   const HEX6 = (c) => /^#[0-9a-fA-F]{6}$/.test(c || '');
+  const brandOn = !!b.brandQuestionnaires || !!(schema && schema.colorway && HEX6(schema.colorway.bg));
   // Agent-chosen colorway (saved on the template schema) overrides the palette,
   // same brand colors the custom sites use — so the questionnaire matches.
   const cw = (schema && schema.colorway && HEX6(schema.colorway.bg)) ? schema.colorway : null;
