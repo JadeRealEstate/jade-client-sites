@@ -1670,7 +1670,7 @@ button:disabled{opacity:.6}
 .nxbtn{display:inline-block;background:var(--btn);color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px}
 </style></head><body><div class="col">
   <div class="prof">
-    ${logo?`<img class="logo" src="${esc(logo)}" alt="">`:avatarHtml}
+    ${logo?`<img class="logo" src="${esc(logo)}" alt="">`:''}${avatar?`<img class="av" src="${esc(avatar)}" alt="">`:(logo?'':avatarHtml)}
     <h1>${displayName}</h1>
     ${title?`<div class="ttl">${title}</div>`:''}
     ${tagline?`<div class="tag">${tagline}</div>`:''}
