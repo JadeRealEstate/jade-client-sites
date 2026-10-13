@@ -892,6 +892,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .jbtn.buy.on{background:var(--jade);border-color:var(--jade);color:#fff}
 .jbtn.sell.on{background:var(--gold);border-color:var(--gold);color:#fff}
 .jbtn:not(.on):hover{border-color:var(--sage)}
+.navright{display:flex;align-items:center;gap:14px}
+.navlink{border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--jade);cursor:pointer;white-space:nowrap;padding:8px 4px}
+.navlink:hover{text-decoration:underline}
+.navicon{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:50%;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;flex:none}
+.navicon:hover{border-color:var(--jade);color:var(--jade)}
+.jswrap{margin:0 0 20px}
+.jswrap .jsw{gap:10px}
+.jswrap .jbtn{flex:1;justify-content:center;padding:14px 18px;border-radius:12px;font-size:15px}
+@media(max-width:600px){.navlink{font-size:13px;padding:6px 2px}.navicon{width:34px;height:34px}}
 .tabline{padding-top:0;padding-bottom:10px}
 .tabs[data-journey="buy"] .tab[data-journey="sell"]{display:none}
 .tabs[data-journey="sell"] .tab[data-journey="buy"]{display:none}
@@ -1145,12 +1154,12 @@ function todaySection(pages, clientName, stage, lender, agent, brandHead, kind){
   h+=journeyStepper(stage, kind, touring);
   let band;
   if(closed){ band={k:'Congratulations',big:'It’s official — welcome home.',meta:'Your transaction has closed. Thank you for trusting us.',btn:null}; }
-  else if(uc){ const cl=keyDates.find(d=>/clos/i.test(d.label||'')); let m='You’re under contract.'; if(cl&&cl.date){const dl=Math.ceil((new Date(cl.date+'T12:00:00Z').getTime()-Date.now())/86400000); m=dl>0?('Closing '+fmtDate(cl.date)+' · '+dl+' day'+(dl===1?'':'s')+' to go'):('Closing '+fmtDate(cl.date));} band={k:'Milestone',big:'You’re under contract',meta:m,btn:pages[0]?{label:'View roadmap',go:'p-'+slugOf(pages[0])}:null}; }
-  else if(nextDay){ const n=nextDay.stops.length; const fs=nextDay.stops[0]||{}; const dn=dayName(nextDay.date); band={k:'Up next',big:(dn?dn+'’s home tour':'Your next tour'),meta:fmtDate(nextDay.date)+' · '+n+' home'+(n===1?'':'s')+(fs.time?' · '+fs.time:''),btn:{label:'View tour & homes',go:'tour'}}; }
-  else if(latestUpdate){ band={k:'Latest',big:'A note from your agent',meta:latestUpdate.text,btn:pages[0]?{label:'Open',go:'p-'+slugOf(pages[0])}:null}; }
-  else { band={k:'Welcome',big:(kind==='sell'?'Your home sale starts here':'Your home search starts here'),meta:'Everything we’re working on together lives in one place.',btn:pages[0]?{label:'Get started',go:'p-'+slugOf(pages[0])}:null}; }
+  else if(uc){ const cl=keyDates.find(d=>/clos/i.test(d.label||'')); let m='You’re under contract.'; if(cl&&cl.date){const dl=Math.ceil((new Date(cl.date+'T12:00:00Z').getTime()-Date.now())/86400000); m=dl>0?('Closing '+fmtDate(cl.date)+' · '+dl+' day'+(dl===1?'':'s')+' to go'):('Closing '+fmtDate(cl.date));} band={k:'Milestone',big:'You’re under contract',meta:m,btn:{label:'View roadmap',go:'roadmap'}}; }
+  else if(nextDay){ const n=nextDay.stops.length; const fs=nextDay.stops[0]||{}; const dn=dayName(nextDay.date); band={k:'Up next',big:(dn?dn+'’s home tour':'Your next tour'),meta:fmtDate(nextDay.date)+' · '+n+' home'+(n===1?'':'s')+(fs.time?' · '+fs.time:''),btn:{label:'View tour & homes',go:'homestours'}}; }
+  else if(latestUpdate){ band={k:'Latest',big:'A note from your agent',meta:latestUpdate.text,btn:{label:'Open roadmap',go:'roadmap'}}; }
+  else { band={k:'Welcome',big:(kind==='sell'?'Your home sale starts here':'Your home search starts here'),meta:'Everything we’re working on together lives in one place.',btn:{label:'Get started',go:'homestours'}}; }
   h+=`<div class="upnext"><div style="min-width:0"><div class="k">${esc(band.k)}</div><div class="big">${esc(band.big)}</div><div class="meta">${esc(band.meta)}</div></div>`+(band.btn?`<div class="cta"><a class="btnw" data-go="${esc(band.btn.go)}">${esc(band.btn.label)} →</a></div>`:'')+`</div>`;
-  if(openList.length){ h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="p-${esc(st.slug)}"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="nsar">→</span></div>`).join('')+`</div></div>`; }
+  if(openList.length){ h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="roadmap"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="nsar">→</span></div>`).join('')+`</div></div>`; }
   const guide=pages.find(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
   const col1 = guide?`<div class="card ovlink" data-go="p-${esc(slugOf(guide))}"><span class="klabel">Explore</span><div class="big" style="font-size:20px">${esc(labelOf(guide))}</div><div class="why" style="margin-top:4px">Your guide — tap to open.</div></div>`:'';
   const first=esc((agent.name||'your agent').split(' ')[0]);
@@ -1230,6 +1239,54 @@ function infoSection(pages, lender, agent){
   if(hasTeam){ h+=`<div class="card" style="margin-top:14px"><span class="klabel">Your team</span>`+((agent&&(agent.name||agent.phone))?teamRow(agent.name||'Your agent','Agent',agent.phone):'')+((lender&&(lender.name||lender.phone))?teamRow(lender.name||'Versatile Lending','Lender',lender.phone):'')+`</div>`; }
   return h+`</div>`;
 }
+function homesToursSection(pages, clientSlug, fb, allHomes){
+  const td=tourDaysOf(pages);
+  let h=`<div data-sec="homestours" hidden><h1>Homes &amp; Tours</h1>`; let any=false;
+  if(td){ const today=todayStr(); const upcoming=td.days.filter(d=>(d.date||'')>=today); const pageSlug=SLUG_BY_TYPE[td.page.page_type]||'buyer';
+    if(upcoming.length){ any=true; h+=`<p class="sub">Your upcoming tours — rate each home as you go.</p>`;
+      upcoming.forEach(d=>{ const di=td.days.indexOf(d); const meta=[d.time?('Starts '+esc(d.time)):'',d.meetAt?('Meet at '+esc(d.meetAt)):''].filter(Boolean).join(' · '); h+=`<div class="daysec"><div class="dayhead"><div><span class="klabel">${esc(fmtDate(d.date))}</span> <span class="klabel">· ${d.stops.length} home${d.stops.length===1?'':'s'}</span></div>`+calLinksDay(d,clientSlug,pageSlug,di)+`</div>`+(meta?`<p class="why" style="margin-top:4px">${meta}</p>`:'')+(d.instructions?`<div class="card" style="margin-top:10px"><span class="klabel">From your agent</span><div style="margin-top:4px">${esc(d.instructions)}</div></div>`:'')+d.stops.map(propCard).join('')+`</div>`; });
+    }
+  }
+  if(allHomes&&allHomes.length){ any=true; const ranked=allHomes.slice().sort((a,b)=>avgScore(fb,(b.id||b.address))-avgScore(fb,(a.id||a.address))); h+=`<div style="margin-top:${td?'22px':'4px'}"><span class="klabel">All homes — ranked by your group</span><p class="why" style="margin:4px 0 2px">Loved homes rise to the top. Rate any home to weigh in.</p>`+ranked.map(propCard).join('')+`</div>`; }
+  if(!any) h+=`<p class="sub">Saved homes and tours will appear here as your agent adds them.</p>`;
+  return h+`</div>`;
+}
+function listingSection(sc){
+  sc=sc||{}; const ev=[];
+  (sc.updates||[]).forEach(u=>ev.push({date:u.date||'',label:'Update',detail:u.text||''}));
+  (sc.offers||[]).forEach(oo=>ev.push({date:oo.by||oo.date||'',label:'Offer',detail:(oo.amount||'')+(oo.terms?(' · '+oo.terms):'')}));
+  (sc.showings||[]).forEach(x=>ev.push({date:'',when:x.when||'',label:'Showing',detail:x.note||''}));
+  (sc.keyDates||[]).forEach(d=>ev.push({date:d.date||'',label:d.label||'Milestone',detail:''}));
+  let h=`<div data-sec="listing" hidden><h1>Your listing</h1>`;
+  if(!ev.length) return h+`<p class="sub">Your listing’s story — showings, feedback, and offers — will build here.</p></div>`;
+  ev.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  h+=`<p class="sub">Everything happening with your listing, newest first.</p><div style="margin-top:14px">`;
+  ev.forEach(e=>{ const when=e.date?fmtDate(e.date):(e.when||''); h+=`<div class="prop"><div class="row"><span class="addr">${esc(e.label)}</span><span style="color:var(--muted);font-size:13px">${esc(when)}</span></div>${e.detail?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(e.detail)}</div>`:''}</div>`; });
+  return h+`</div></div>`;
+}
+function roadmapSection(pages, stage, kind, seller){
+  const td=tourDaysOf(pages);
+  let keyDates=[]; for(const p of pages){((p.content||{}).keyDates||[]).forEach(d=>{if(d&&d.label)keyDates.push(d);});}
+  let steps=[]; for(const p of pages){ if(p.page_type==='custom')continue; (((p.content||{}).nextSteps)||[]).forEach((st,si)=>{ if(st&&st.text)steps.push(Object.assign({},st,{id:st.id||('i'+si)})); }); }
+  const doneN=steps.filter(st=>st.done).length;
+  let h=`<div data-sec="roadmap" hidden><h1>Your roadmap</h1><p class="sub">Where you are, and what’s ahead.</p>`;
+  h+=`<div style="margin-top:14px">`+journeyStepper(stage, kind, !!td)+`</div>`;
+  if(steps.length){const pct=Math.round(doneN/steps.length*100);h+=`<div class="card stepcard" style="margin-top:16px"><div class="row"><span class="klabel">Your next steps</span><span class="klabel steptally">${doneN}/${steps.length} done</span></div><div class="bar"><i class="stepfill" style="width:${pct}%"></i></div>`+steps.map((st,si)=>`<button type="button" class="chk stepitem ${st.done?'done':''}" data-stepid="${esc(st.id)}"><span class="m">${st.done?'✓':'○'}</span><span>${esc(st.text)}</span></button>`).join('')+`</div>`;}
+  if(keyDates.length){ h+=`<div class="card" style="margin-top:14px"><span class="klabel">Milestones &amp; key dates</span>`+keyDates.map(d=>`<div class="row" style="margin-top:10px"><span style="font-weight:600">${esc(d.label)}</span><span style="color:var(--muted)">${d.date?esc(fmtDate(d.date)):''}</span></div>`).join('')+`</div>`; }
+  if(!steps.length && !keyDates.length) h+=`<p class="why" style="margin-top:12px">Your milestones and next steps will appear here as your journey moves along.</p>`;
+  return h+`</div>`;
+}
+function resourcesSection(pages, agentNm){
+  const docs=[]; for(const p of pages){((p.content||{}).documents||[]).forEach(d=>{if(d&&d.name)docs.push({name:d.name,type:d.type||'',url:d.url||'',from:labelOf(p)});});}
+  const guides=pages.filter(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
+  let hubSecs=''; for(const p of pages){ if(p.page_type==='custom')continue; const secs=((p.content||{}).sections||[]).filter(x=>x&&x.enabled!==false); if(secs.length) hubSecs+=secs.map((x,i)=>renderClientSec(x,i,p.content||{})).join(''); }
+  let h=`<div data-sec="resources" hidden><h1>Resources</h1><p class="sub">Documents, guides, and helpful materials from ${esc(agentNm||'your agent')}.</p>`; let any=false;
+  if(guides.length){ any=true; h+=`<div style="margin-top:16px"><span class="klabel">Guides &amp; materials</span>`+guides.map(g=>`<div class="card ovlink" data-go="p-${esc(slugOf(g))}" style="margin-top:10px"><div style="font-weight:700">${esc(labelOf(g))}</div><div class="why" style="margin-top:2px">Tap to open →</div></div>`).join('')+`</div>`; }
+  if(docs.length){ any=true; h+=`<div style="margin-top:18px"><span class="klabel">Documents</span>`+docs.map(d=>{const u=(d.url&&/^(https?:|blob:)/i.test(d.url))?d.url:'';return `<div class="card" style="margin-top:10px"><div class="row" style="align-items:center;gap:12px"><div style="min-width:0"><div style="font-weight:700">${esc(d.name)}</div>`+((d.type||d.from)?`<div style="color:var(--muted);font-size:13px">${esc([d.type,d.from].filter(Boolean).join(' · '))}</div>`:'')+`</div>`+(u?`<a class="btn small ghost" href="${esc(u)}" target="_blank" rel="noreferrer">Open</a>`:`<span style="color:var(--muted);font-size:13px">Shared by your agent</span>`)+`</div></div>`;}).join('')+`</div>`; }
+  if(hubSecs){ any=true; h+=`<div style="margin-top:18px">`+hubSecs+`</div>`; }
+  if(!any) h+=`<p class="sub" style="margin-top:12px">Your agent hasn’t added resources yet.</p>`;
+  return h+`</div>`;
+}
 function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient){
   brand = brand || {};
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
@@ -1256,30 +1313,25 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   const dualJ=hasBuyJ&&hasSellJ;
   const ordered=pages.slice().sort((a,b)=>{const ca=a.page_type==='custom',cb=b.page_type==='custom';if(ca&&cb)return(((a.content&&a.content.order)||0)-((b.content&&b.content.order)||0));if(ca)return 1;if(cb)return -1;return 0;});
   const visiblePages=ordered.filter(p=>!(p.page_type==='custom'&&p.content&&p.content.hidden));
+  const _afirst=esc((agentNm||'your agent').split(' ')[0]||'your agent');
   let tabs=`<button class="tab" data-tab="today" data-journey="both">Today</button>`;
-  for(const p of visiblePages){const j=_tj(p);tabs+=`<button class="tab ${j==='sell'?'tab-sell':'tab-buy'}" data-tab="p-${slugOf(p)}" data-journey="${j}">${esc(labelOf(p))}</button>`;}
-  if(td)tabs+=`<button class="tab tab-buy" data-tab="tour" data-journey="buy">Tour</button>`;
-  if(allHomes.length)tabs+=`<button class="tab tab-buy" data-tab="homes" data-journey="buy">Homes</button>`;
-  if(seller)tabs+=`<button class="tab tab-sell" data-tab="activity" data-journey="sell">Activity</button><button class="tab tab-sell" data-tab="showings" data-journey="sell">Showings</button><button class="tab tab-sell" data-tab="offers" data-journey="sell">Offers</button>`;
-  if(showAgent&&(agent.name||agent.bio))tabs+=`<button class="tab" data-tab="agent" data-journey="both">Your Agent</button>`;
-  if(docsCount(pages))tabs+=`<button class="tab" data-tab="docs" data-journey="both">Documents</button>`;
-  tabs+=`<button class="tab" data-tab="messages" data-journey="both">Messages</button><button class="tab" data-tab="settings" data-journey="both">Settings</button>`;
+  if(hasBuyJ)tabs+=`<button class="tab" data-tab="homestours" data-journey="buy">Homes &amp; Tours</button>`;
+  if(hasSellJ)tabs+=`<button class="tab" data-tab="listing" data-journey="sell">Your listing</button>`;
+  tabs+=`<button class="tab" data-tab="roadmap" data-journey="both">Roadmap</button>`;
+  tabs+=`<button class="tab" data-tab="resources" data-journey="both">Resources</button>`;
+  const navright=`<div class="navright"><button class="navlink" data-tab="messages">Contact ${_afirst}</button><button class="navicon" data-tab="settings" title="Account" aria-label="Account settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20.5a8 8 0 0 1 16 0"/></svg></button></div>`;
   const initJ=(/^(activity|showings|offers)$/.test(openTab||'')||(!hasBuyJ&&hasSellJ))?'sell':'buy';
   let body;
-  if(dualJ){
-    const jsw=`<div class="jsw"><button class="jbtn buy${initJ==='buy'?' on':''}" data-jbtn="buy"><span class="ji">\u2302</span> Buying a home</button><button class="jbtn sell${initJ==='sell'?' on':''}" data-jbtn="sell"><span class="ji">\u21E7</span> Selling my home</button></div>`;
-    body=`<div class="nav"><div class="in jrow">${brandMark}${jsw}</div><div class="in tabline"><div class="tabs" data-journey="${initJ}">${tabs}</div></div></div><div class="wrap">`;
-  } else {
-    body=`<div class="nav"><div class="in jrow">${brandMark}</div><div class="in tabline"><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
-  }
+  const jsw=`<div class="jsw"><button class="jbtn buy${initJ==='buy'?' on':''}" data-jbtn="buy"><span class="ji">⌂</span> Buying a home</button><button class="jbtn sell${initJ==='sell'?' on':''}" data-jbtn="sell"><span class="ji">⇧</span> Selling my home</button></div>`;
+  body=`<div class="nav"><div class="in jrow">${brandMark}<span style="flex:1"></span>${navright}</div><div class="in tabline"><div class="tabs" data-journey="${initJ}">${tabs}</div></div></div><div class="wrap">`;
+  if(dualJ)body+=`<div class="jswrap">${jsw}</div>`;
   if(rawManage)body+=`<div class="agenttb"><span>${asClient?'Previewing as your client \u2014 only published content shows':'Agent view \u00b7 drafts visible'}</span>`+(asClient?`<a href="?">Back to agent view</a>`:`<a href="?asclient=1">Preview as client \u2192</a>`)+`</div>`;
   body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
-  for(const p of visiblePages)body+=pageSection(p);
-  body+=tourSection(pages,clientSlug,fb);
-  if(allHomes.length)body+=homesSection(allHomes, fb);
-  if(seller){ body+=activitySection(sc); body+=showingsSection(sc); body+=offersSection(sc); }
-  if(showAgent)body+=agentSection(agent);
-  body+=docsSection(pages,agentNm);
+  if(hasBuyJ)body+=homesToursSection(pages,clientSlug,fb,allHomes);
+  if(hasSellJ)body+=listingSection(sc);
+  body+=roadmapSection(pages,stage,initJ,seller);
+  body+=resourcesSection(pages,agentNm);
+  for(const p of visiblePages)if(p.page_type==='custom')body+=pageSection(p);
   body+=messagesSection(agent.name);
   body+=settingsSection(vis,myEmail);
   const cEmail=((agent.email||'').trim())||((brand&&brand.email)||'');
@@ -1289,8 +1341,6 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   const cHead=(brand&&brand.headshotUrl)||'';
   if(cEmail||cTel.length>=10){ body+=`<div class="agentbar">`+(cHead?`<img class="abimg" src="${esc(cHead)}" alt="">`:'')+`<div><div class="abname">${esc(agentNm||'Your agent')}</div><div class="absub">Here to help — reach out anytime.</div></div><div class="abbtns">`+(cTel.length>=10?`<a class="abbtn" href="sms:${cT}">Text ${cFirst}</a><a class="abbtn ghost" href="tel:${cT}">Call</a>`:'')+(cEmail?`<a class="abbtn ghost" href="mailto:${esc(cEmail)}">Email ${cFirst}</a>`:'')+`</div></div>`; }
   body+=`<div class="foot"><span style="font-family:'DM Serif Display',serif;font-style:italic;color:var(--jade)">Jade Real Estate</span> · Equal Housing Opportunity<br><a href="#" onclick="document.cookie='sb_at=; path=/; Max-Age=0';document.cookie='sb_rt=; path=/; Max-Age=0';location.reload();return false;" style="color:var(--muted);font-size:12px;display:inline-block;margin-top:6px">Sign out</a></div></div>`;
-  const tel=(agent.phone||'').replace(/\D/g,''); const telFmt=tel.length===10?('+1'+tel):(tel.length===11&&tel[0]==='1'?('+'+tel):('+'+tel)); const fn=esc((agent.name||'your agent').split(' ')[0]);
-  if(tel.length>=10)body+=`<div class="contactbar"><a class="call" href="tel:${telFmt}">Call ${fn}</a><a class="text" href="sms:${telFmt}">Text ${fn}</a></div>`;
   body+=`<script>
 var SB=${JSON.stringify(SB)},ANON=${JSON.stringify(ANON)},CID=${JSON.stringify(cid)},CSLUG=${JSON.stringify(clientSlug)},OPEN=${JSON.stringify(openTab||'today')},NAME=${JSON.stringify(clientName)},ME=${JSON.stringify(me||'You')},MYEMAIL=${JSON.stringify(myEmail||'')},VIS=${JSON.stringify(vis||'shared')},LISTINGS=${JSON.stringify(listings)},FB=${JSON.stringify(fb||{})},MSGS=${JSON.stringify(msgs||[])};
 (function(){
