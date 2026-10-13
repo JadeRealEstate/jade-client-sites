@@ -1609,6 +1609,7 @@ function renderLanding(slug,page,ag){
   const bookHtml=(isMain&&bookingUrl&&guides.length>0&&!nextStepTxt)?`<div class="sec nextstep"><div class="nx">Ready when you are</div><a class="nxbtn" href="${esc(bookingUrl)}" target="_blank" rel="noopener">Book a time</a></div>`:'';
   const sectionsHtml=servicesHtml+aboutHtml+testiHtml+faqHtml+nextHtml+bookHtml;
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
+  const _ti=d.topImage||'both'; const _showLogo=(_ti==='both'||_ti==='logo')&&logo; const _showAv=(_ti==='both'||_ti==='headshot')&&avatar; const headImgs=((_showLogo?`<img class="logo" src="${esc(logo)}" alt="">`:'')+(_showAv?`<img class="av" src="${esc(avatar)}" alt="">`:''))||avatarHtml;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
   const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23335143%27%2F%3E%3Ctext%20x%3D%2750%%27%20y%3D%2753%%27%20dominant-baseline%3D%27central%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%26quot%3BTimes%20New%20Roman%26quot%3B%2Cserif%27%20font-style%3D%27italic%27%20font-size%3D%2746%27%20font-weight%3D%27400%27%20fill%3D%27%23f2efeb%27%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${displayName} · ${page.title?esc(page.title):'Jade Real Estate'}</title>
@@ -1670,7 +1671,7 @@ button:disabled{opacity:.6}
 .nxbtn{display:inline-block;background:var(--btn);color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px}
 </style></head><body><div class="col">
   <div class="prof">
-    ${logo?`<img class="logo" src="${esc(logo)}" alt="">`:''}${avatar?`<img class="av" src="${esc(avatar)}" alt="">`:(logo?'':avatarHtml)}
+    ${headImgs}
     <h1>${displayName}</h1>
     ${title?`<div class="ttl">${title}</div>`:''}
     ${tagline?`<div class="tag">${tagline}</div>`:''}
