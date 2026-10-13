@@ -1226,7 +1226,11 @@ setInterval(loadChat,20000);
 })();
 </script>`;
   const _style=(pages.find(p=>p.content&&p.content.style)||{content:{}}).content.style||'jade_standard';
-  return htmlResp(shell(body, clientName+' · Jade Real Estate', _style),200);
+  // Agent-chosen colorway brands the whole hub (primary + accent). Falls back to Jade green.
+  const _cw=(pages.find(p=>p.content&&p.content.colorway&&/^#[0-9a-fA-F]{6}$/.test((p.content.colorway.bg)||''))||{content:{}}).content.colorway;
+  let _brandStyle='';
+  if(_cw){ const bg=_cw.bg; const chip=/^#[0-9a-fA-F]{6}$/.test(_cw.chip||'')?_cw.chip:(/^#[0-9a-fA-F]{6}$/.test(_cw.btn||'')?_cw.btn:bg); _brandStyle='<style>:root{--jade:'+esc(bg)+';--gold:'+esc(chip)+'}</style>'; }
+  return htmlResp(shell(_brandStyle+body, clientName+' · Jade Real Estate', _style),200);
 }
 
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
