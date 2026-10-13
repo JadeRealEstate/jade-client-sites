@@ -1018,8 +1018,17 @@ function calLinksDay(day, clientSlug, pageSlug, di) {
   const ms='https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject='+encodeURIComponent(title)+'&startdt='+isoLocal(day.date,stops[0].t)+'&enddt='+isoLocal(day.date,endT)+'&location='+loc+'&body='+details;
   return `<div class="calrow"><a href="/${clientSlug}/${pageSlug}.ics?d=${di}">Apple Calendar</a><a href="${g}" target="_blank" rel="noreferrer">Google</a><a href="${ms}" target="_blank" rel="noreferrer">Outlook</a></div>`;
 }
+const icsEsc=(t)=>String(t||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
 function buildICS(c, dOnly){ const days=daysFromContent(c); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jade Real Estate//EN','CALSCALE:GREGORIAN']; const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z'); let uid=0;
-  days.forEach((day,di)=>{ if(dOnly!=null && di!==dOnly) return; day.stops.forEach((s,i)=>{const t=parseTime(s.time)||{h:9+i,min:0};const e=addMin(t,30);lines.push('BEGIN:VEVENT','UID:'+Date.now()+'-'+(uid++)+'@jaderealestate.com','DTSTAMP:'+stamp,'DTSTART:'+stampLocal(day.date,t),'DTEND:'+stampLocal(day.date,e),'SUMMARY:'+('Showing: '+s.address).replace(/[,;\\]/g,' '),'LOCATION:'+String(s.address).replace(/[,;\\]/g,' '),'DESCRIPTION:'+String(s.note||'Home tour').replace(/[,;\\]/g,' '),'END:VEVENT');}); });
+  days.forEach((day,di)=>{ if(dOnly!=null && di!==dOnly) return;
+    const dayT=parseTime(day.time);
+    const stops=(day.stops||[]).map((s,i)=>({address:s.address,note:s.note||'',t:parseTime(s.time)||(i===0?dayT:null)||{h:9,min:0}}));
+    if(!day.date||!stops.length) return;
+    const startT=stops[0].t; const endT=addMin(stops[stops.length-1].t,45);
+    const descLines=[]; if(day.meetAt)descLines.push('Meet: '+day.meetAt); if(day.instructions)descLines.push(day.instructions); descLines.push('Your showing itinerary:'); stops.forEach((s,i)=>descLines.push((i+1)+'. '+s.address+(s.note?' — '+s.note:'')));
+    const loc=day.meetAt||stops[0].address;
+    lines.push('BEGIN:VEVENT','UID:'+Date.now()+'-'+(uid++)+'@jaderealestate.com','DTSTAMP:'+stamp,'DTSTART:'+stampLocal(day.date,startT),'DTEND:'+stampLocal(day.date,endT),'SUMMARY:'+icsEsc('Home tour with Jade Real Estate'),'LOCATION:'+icsEsc(loc),'DESCRIPTION:'+icsEsc(descLines.join('\n')),'END:VEVENT');
+  });
   lines.push('END:VCALENDAR'); return lines.join('\r\n'); }
 
 function secURL(u){u=String(u||'').trim(); if(/^https?:\/\//i.test(u))return u; if(u&&u.indexOf('.')>0&&!/\s/.test(u))return 'https://'+u; return '';}
