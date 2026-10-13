@@ -739,7 +739,7 @@ function renderQuestionnairePage(opts) {
   const heading = type === 'seller' ? 'Seller Questionnaire' : 'Buyer Questionnaire';
   const who = agentName ? `${escH(agentName)} · Jade Real Estate` : 'Jade Real Estate';
   const b = brand || {};
-  const brandOn = !!b.brandQuestionnaires;
+  const brandOn = !!b.brandQuestionnaires || !!(schema && schema.colorway && HEX6(schema.colorway.bg));
   const HEX6 = (c) => /^#[0-9a-fA-F]{6}$/.test(c || '');
   // Agent-chosen colorway (saved on the template schema) overrides the palette,
   // same brand colors the custom sites use — so the questionnaire matches.
@@ -748,7 +748,8 @@ function renderQuestionnairePage(opts) {
   const primary = cw ? cw.bg : ((brandOn && b.primaryColor) ? b.primaryColor : '#335143');
   const secondary = (cw && HEX6(cw.btn)) ? cw.btn : ((brandOn && b.secondaryColor) ? b.secondaryColor : '#546751');
   const accent = (cw && HEX6(cw.chip)) ? cw.chip : ((brandOn && b.accentColor) ? b.accentColor : '#b08d57');
-  const logo = (brandOn && b.logoUrl) ? b.logoUrl : '';
+  const logo = brandOn ? ((b.logos && (b.logos.horizontal || b.logos.square)) || b.logoUrl || '') : '';
+  const _qsk = styleKey(b.style); const _qhead = _qsk==='luxury' ? "'Cormorant Garamond',Georgia,serif" : _qsk==='editorial' ? "'Fraunces',Georgia,serif" : "'DM Serif Display',Georgia,serif";
   const brandName = (brandOn && (b.displayName || b.business)) ? (b.displayName || b.business) : '';
   const brandCss = colorsOn ? `<style>:root{--jade:${escH(primary)};--jade2:${escH(secondary)};--gold:${escH(accent)}}</style>` : '';
   const markHtml = brandOn ? (logo ? `<img src="${escH(logo)}" alt="" style="height:32px;width:auto;max-width:180px;object-fit:contain">` : `<span class="mark">${escH(brandName || agentName || '')}</span>`) : `<span class="mark">Jade</span>`;
@@ -796,7 +797,7 @@ textarea.in{resize:vertical}
 .done .big{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:30px;color:var(--jade);margin-bottom:8px}
 .done p{color:var(--ink);opacity:.75}
 .foot{text-align:center;font-size:11px;color:var(--jade2);margin-top:18px}
-</style>${brandCss}</head>
+</style>${brandCss}${brandOn?(styleFontsLink(b.style)+styleOverrideCss(b.style)+'<style>.brand .mark{font-family:'+_qhead+' !important;font-style:'+(_qsk==='jade_standard'?'italic':'normal')+'}</style>'):''}</head>
 <body><div class="wrap">
 <div class="brand">${markHtml}<span class="who">${who}</span></div>
 <div class="card">
