@@ -879,7 +879,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .nav .in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:24px;padding:15px 22px}
 .brand{font-family:'DM Serif Display',Georgia,serif;font-style:italic;color:var(--jade);font-size:25px;white-space:nowrap}
 .brandlogo{height:40px;width:auto;max-width:230px;display:block;object-fit:contain}
-.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs{display:flex;flex-wrap:wrap;gap:2px 6px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tab{border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:12px 14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
 .tab:hover{color:var(--ink)}.tab.active{color:var(--jade);border-bottom-color:var(--jade)}
 .tab-buy::before,.tab-sell::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
@@ -1269,7 +1269,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
     const jsw=`<div class="jsw"><button class="jbtn buy${initJ==='buy'?' on':''}" data-jbtn="buy"><span class="ji">\u2302</span> Buying a home</button><button class="jbtn sell${initJ==='sell'?' on':''}" data-jbtn="sell"><span class="ji">\u21E7</span> Selling my home</button></div>`;
     body=`<div class="nav"><div class="in jrow">${brandMark}${jsw}</div><div class="in tabline"><div class="tabs" data-journey="${initJ}">${tabs}</div></div></div><div class="wrap">`;
   } else {
-    body=`<div class="nav"><div class="in">${brandMark}<div class="tabs">${tabs}</div></div></div><div class="wrap">`;
+    body=`<div class="nav"><div class="in jrow">${brandMark}</div><div class="in tabline"><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
   if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
   body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
