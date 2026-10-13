@@ -882,9 +882,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .tabs{display:flex;flex-wrap:wrap;gap:2px 6px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tab{border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:12px 14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
 .tab:hover{color:var(--ink)}.tab.active{color:var(--jade);border-bottom-color:var(--jade)}
-.tab-buy::before,.tab-sell::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.tab-buy::before{background:var(--jade)}
-.tab-sell::before{background:var(--gold)}
+.tab-buy::before,.tab-sell::before{content:none}
 .tab-sell.active{color:var(--gold);border-bottom-color:var(--gold)}
 @media(max-width:600px){.nav .in{padding:12px 14px;gap:14px}.brandlogo{height:33px}.brand{font-size:21px}.tab{font-size:14px;padding:10px 11px}.wrap{padding:20px 14px 104px}.upnext{padding:18px 18px}.upnext .big{font-size:22px}}
 .jrow{padding-bottom:6px}
@@ -897,7 +895,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .tabline{padding-top:0;padding-bottom:10px}
 .tabs[data-journey="buy"] .tab[data-journey="sell"]{display:none}
 .tabs[data-journey="sell"] .tab[data-journey="buy"]{display:none}
-.wrap{max-width:980px;margin:0 auto;padding:26px 22px 104px}
+.wrap{max-width:980px;margin:0 auto;padding:14px 22px 104px}
 h1{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(26px,5vw,38px);margin:0;line-height:1.06}
 h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;color:var(--jade);margin:0}
 .sub{color:var(--muted);margin:8px 0 0}
@@ -928,6 +926,9 @@ h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;c
 .tile:hover{border-color:var(--jade)}.tile .k{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
 .stop{display:flex;gap:12px;margin:12px 0}.stop .t{font-weight:700;color:var(--jade);width:70px;flex:none;font-size:13px}
 .calrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.calrow a{border:1px solid var(--jade);color:var(--jade);text-decoration:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}.calrow a.calprim{background:var(--jade);color:#fff}
+.agenttb{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--muted);margin-bottom:16px}
+.agenttb a{color:var(--jade);font-weight:700;text-decoration:none}
+.dayhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 .agentbar{margin:34px 0 10px;border-top:1px solid var(--line);padding-top:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .agentbar .abimg{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none}
 .agentbar .abname{font-weight:700;font-size:15px;color:var(--ink)}
@@ -1060,7 +1061,7 @@ function calLinksDay(day, clientSlug, pageSlug, di) {
   const details=(day.meetAt?('Meet: '+encodeURIComponent(day.meetAt)+'%0A'):'')+(day.instructions?(encodeURIComponent(day.instructions)+'%0A%0A'):'')+'Your showing itinerary:%0A'+stops.map((s,i)=>encodeURIComponent((i+1)+'. '+s.address+(s.note?' — '+s.note:''))).join('%0A'); const loc=encodeURIComponent(day.meetAt||stops[0].address);
   const g='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+stampLocal(day.date,stops[0].t)+'/'+stampLocal(day.date,endT)+'&details='+details+'&location='+loc;
   const ms='https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject='+encodeURIComponent(title)+'&startdt='+isoLocal(day.date,stops[0].t)+'&enddt='+isoLocal(day.date,endT)+'&location='+loc+'&body='+details;
-  return `<div class="calrow"><a class="calprim" href="/${clientSlug}/${pageSlug}.ics?d=${di}">Add to calendar</a><a href="${g}" target="_blank" rel="noreferrer">Google Calendar</a></div>`;
+  return `<div class="calrow"><a class="calprim" href="${g}" target="_blank" rel="noreferrer">Add to Google Calendar</a><a href="/${clientSlug}/${pageSlug}.ics?d=${di}">Apple / Outlook</a></div>`;
 }
 const icsEsc=(t)=>String(t||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
 function buildICS(c, dOnly){ const days=daysFromContent(c); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jade Real Estate//EN','CALSCALE:GREGORIAN']; const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z'); let uid=0;
@@ -1165,7 +1166,7 @@ function tourSection(pages, clientSlug, fb){
   const totalUp=upcoming.reduce((n,d)=>n+d.stops.length,0);
   let h=`<div data-sec="tour" hidden><h1>Your tours</h1><p class="sub">${totalUp?totalUp+' home'+(totalUp===1?'':'s')+' coming up — rate each as you go.':'Your showings, and how you rated them.'}</p>`;
   h+=`<p class="why" style="margin-top:6px">Rate each home below. Your group sees your take based on your sharing setting — change it under Settings.</p>`;
-  upcoming.forEach(d=>{ const di=td.days.indexOf(d); const meta=[d.time?('Starts '+esc(d.time)):'',d.meetAt?('Meet at '+esc(d.meetAt)):''].filter(Boolean).join(' \u00b7 '); h+=`<div class="daysec"><div class="row"><span class="klabel">${esc(fmtDate(d.date))}</span><span class="klabel">${d.stops.length} home${d.stops.length===1?'':'s'}</span></div>`+(meta?`<p class="why" style="margin-top:4px">${meta}</p>`:'')+(d.instructions?`<div class="card" style="margin-top:10px"><span class="klabel">From your agent</span><div style="margin-top:4px">${esc(d.instructions)}</div></div>`:'')+`<div class="card" style="margin-top:10px"><span class="klabel">Add this day to your calendar</span>`+calLinksDay(d,clientSlug,pageSlug,di)+`</div>`+d.stops.map(propCard).join('')+`</div>`; });
+  upcoming.forEach(d=>{ const di=td.days.indexOf(d); const meta=[d.time?('Starts '+esc(d.time)):'',d.meetAt?('Meet at '+esc(d.meetAt)):''].filter(Boolean).join(' \u00b7 '); h+=`<div class="daysec"><div class="dayhead"><div><span class="klabel">${esc(fmtDate(d.date))}</span> <span class="klabel">\u00b7 ${d.stops.length} home${d.stops.length===1?'':'s'}</span></div>`+calLinksDay(d,clientSlug,pageSlug,di)+`</div>`+(meta?`<p class="why" style="margin-top:4px">${meta}</p>`:'')+(d.instructions?`<div class="card" style="margin-top:10px"><span class="klabel">From your agent</span><div style="margin-top:4px">${esc(d.instructions)}</div></div>`:'')+d.stops.map(propCard).join('')+`</div>`; });
   if(!upcoming.length){ h+=`<p class="why" style="margin-top:10px">No upcoming tours scheduled right now. Homes you’ve already seen live on the Homes tab, ranked by your group.</p>`; }
   h+=`</div>`; return h;
 }
@@ -1229,7 +1230,7 @@ function infoSection(pages, lender, agent){
   if(hasTeam){ h+=`<div class="card" style="margin-top:14px"><span class="klabel">Your team</span>`+((agent&&(agent.name||agent.phone))?teamRow(agent.name||'Your agent','Agent',agent.phone):'')+((lender&&(lender.name||lender.phone))?teamRow(lender.name||'Versatile Lending','Lender',lender.phone):'')+`</div>`; }
   return h+`</div>`;
 }
-function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand){
+function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient){
   brand = brand || {};
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
   const _brandName = brand.business || brand.displayName || brand.fullName || '';
@@ -1271,7 +1272,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   } else {
     body=`<div class="nav"><div class="in jrow">${brandMark}</div><div class="in tabline"><div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
-  if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
+  if(rawManage)body+=`<div class="agenttb"><span>${asClient?'Previewing as your client \u2014 only published content shows':'Agent view \u00b7 drafts visible'}</span>`+(asClient?`<a href="?">Back to agent view</a>`:`<a href="?asclient=1">Preview as client \u2192</a>`)+`</div>`;
   body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
   for(const p of visiblePages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
@@ -1698,7 +1699,9 @@ export default {
     if(parts[1]&&parts[1].toLowerCase().endsWith('.ics')){ if(!_user)return notFound(); const _cm=await viewerCanManage(clientSlug,_tok,_user.id); const type=TYPE_BY_SLUG[parts[1].toLowerCase().slice(0,-4)]; const pages=await fetchPages(clientSlug,_tok,_cm); const p=pages.find(x=>x.page_type===type)||pages.find(x=>daysFromContent(x.content||{}).length); if(!p)return notFound(); const dq=url.searchParams.get('d'); const di=(dq!=null&&/^\d+$/.test(dq))?parseInt(dq,10):null; return new Response(buildICS(p.content||{},di),{headers:{'content-type':'text/calendar; charset=utf-8','content-disposition':'attachment; filename="jade-tour.ics"'}}); }
     if(!_user){ return authResp(!!getCookie(request,'sb_rt')); }
     try{
-      const canManage=await viewerCanManage(clientSlug,_tok,_user.id);
+      const _rawManage=await viewerCanManage(clientSlug,_tok,_user.id);
+      const _asClient=url.searchParams.get('asclient')==='1';
+      const canManage=_rawManage&&!_asClient;
       const pages=await fetchPages(clientSlug,_tok,canManage); if(!pages.length)return noAccessResp();
       let openTab='today'; if(parts[1]&&TYPE_BY_SLUG[parts[1].toLowerCase()])openTab='p-'+parts[1].toLowerCase();
       const cid=(pages[0]&&pages[0].client_id)||'';
@@ -1707,7 +1710,7 @@ export default {
       const [fb,vis,msgs]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok)]);
       const _agb=await fetchAgentCard((pages[0]&&pages[0].agent_id)||'');
       const _brand=Object.assign({},(_agb&&_agb.brand)||{}); if(_agb&&_agb.name&&!_brand.fullName)_brand.fullName=_agb.name;
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand);
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient);
     }catch(e){ return notFound(); }
   },
 };
