@@ -971,6 +971,31 @@ textarea{min-height:96px;resize:vertical}
 .postbadge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--jade);border-radius:99px;padding:2px 7px}
 .postwhen{font-size:11px;color:var(--muted);margin-left:auto}
 .postbody{font-size:14px;line-height:1.5;color:var(--ink);white-space:pre-wrap}
+.jrny{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:22px 0 4px}
+.jlbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:16px}
+.jstep{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap}
+.jdot{width:13px;height:13px;border-radius:50%;border:2px solid var(--sage);background:var(--surface);flex:none}
+.jstep.done .jdot,.jstep.on .jdot{background:var(--jade);border-color:var(--jade)}
+.jstep.on{color:var(--jade)}
+.jline{height:2px;background:var(--line);flex:1 1 20px;min-width:16px;margin:0 8px}
+.jline.done{background:var(--jade)}
+.upnext{margin-top:16px;border-radius:16px;background:var(--jade);color:#fff;padding:22px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.upnext .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.82;font-weight:700}
+.upnext .big{font-size:26px;margin-top:6px;color:#fff}
+.upnext .meta{opacity:.92;margin-top:5px;font-size:14px;line-height:1.4}
+.upnext .cta{margin-left:auto}
+.btnw{display:inline-block;background:#fff;color:var(--jade);border-radius:10px;padding:11px 18px;font-weight:700;text-decoration:none;font-size:14px;white-space:nowrap}
+.nextlist{margin-top:6px}
+.nextlist .nl{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--line);cursor:pointer}
+.nextlist .nl:first-child{border-top:0}
+.nextlist .nc{width:19px;height:19px;border-radius:50%;border:2px solid var(--sage);flex:none}
+.nextlist .nt{flex:1;font-weight:600;min-width:0}
+.nextlist .na{color:var(--muted)}
+.ovcards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.ovlink{cursor:pointer;transition:border-color .15s}.ovlink:hover{border-color:var(--jade)}
+.notecard{display:flex;gap:14px;align-items:flex-start}
+.notecard img{width:60px;height:60px;border-radius:50%;object-fit:cover;flex:none}
+@media(max-width:720px){.ovcards{grid-template-columns:1fr}.upnext .cta{margin-left:0}}
 .msg.agent{align-self:flex-start}.msg.agent .bub{background:linear-gradient(135deg,var(--forest),var(--jade));color:#fff}
 .msg.agent .mname{color:var(--jade);font-weight:700}
 .contactbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;gap:10px;max-width:900px;margin:0 auto;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
@@ -1090,24 +1115,39 @@ function pageSection(p) {
   h+=`</div>`; return h;
 }
 function teamRow(name, role, phone){ const tel=(phone||'').replace(/\D/g,''); const t=tel.length===10?'+1'+tel:(tel.length===11&&tel[0]==='1'?'+'+tel:'+'+tel); let h=`<div class="row" style="margin-top:10px"><div><div style="font-weight:600">${esc(name)}</div><div style="color:var(--muted);font-size:13px">${esc(role)}</div></div>`; if(tel.length>=10)h+=`<div style="display:flex;gap:8px"><a class="btn small" href="tel:${t}">Call</a><a class="btn small ghost" href="sms:${t}">Text</a></div>`; return h+`</div>`; }
-function todaySection(pages, clientName, stage, lender){
-  let latestUpdate=null,openSteps=0,keyDates=[];
-  for(const p of pages){const c=p.content||{};(c.updates||[]).forEach(u=>{if(!latestUpdate)latestUpdate=u;});openSteps+=(c.nextSteps||[]).filter(s=>s&&s.text&&!s.done).length;(c.keyDates||[]).forEach(d=>keyDates.push(d));}
-  const td=tourDaysOf(pages); const upcoming=td?td.days.filter(d=>(d.date||'')>=todayStr()):[]; const nextDay=upcoming[0]; const tour=!!td; const uc=stage==='under_contract'||stage==='closing', closed=stage==='closed';
-  let h=`<div data-sec="today"><h1 id="greet">Welcome, ${esc(clientName)}.</h1><p class="sub">Everything for your journey with Jade, in one place.</p><div class="grid two">`;
-  if(closed){ h+=`<div class="card feature"><span class="klabel">Congratulations</span><div class="big">It\u2019s official \u2014 welcome home.</div><div style="opacity:.9;margin-top:4px">Your transaction has closed. Thank you for trusting Jade.</div></div>`; }
-  else if(uc){ const closing=keyDates.find(d=>/clos/i.test(d.label||'')); var sub2="On the path to closing - here's what's next."; if(closing&&closing.date){ var dl=Math.ceil((new Date(closing.date+"T00:00:00").getTime()-Date.now())/86400000); sub2 = dl>0?("Closing "+esc(fmtDate(closing.date))+" - "+dl+" day"+(dl===1?"":"s")+" to go"):(dl===0?("Closing today - "+esc(fmtDate(closing.date))):("Closed "+esc(fmtDate(closing.date)))); } h+=`<div class="card feature"><span class="klabel">Milestone</span><div class="big">You\u2019re under contract</div><div style="opacity:.9;margin-top:4px">${sub2}</div></div>`; }
-  else if(nextDay){const n=nextDay.stops.length;const fs=nextDay.stops[0]||{};h+=`<div class="card feature"><span class="klabel">Next tour</span><div class="big">${esc(fmtDate(nextDay.date))}</div><div style="opacity:.9;margin-top:4px">${n} home${n===1?'':'s'}${fs.time?' \u00b7 starts '+esc(fs.time):''}</div><a class="btn ghost" style="margin-top:12px;border-color:rgba(255,255,255,.6);color:#fff" data-go="tour">View tour</a></div>`;}
-  else if(latestUpdate){h+=`<div class="card feature"><span class="klabel">Latest</span><div class="big" style="font-size:19px;line-height:1.3;margin-top:8px">${esc(latestUpdate.text)}</div></div>`;}
-  h+=`<div class="card"><span class="klabel">Needs you</span><div class="big" style="font-size:20px">${openSteps>0?openSteps+' next step'+(openSteps===1?'':'s'):'You\u2019re all caught up'}</div>${openSteps>0&&pages[0]?`<a class="btn small" style="margin-top:10px" data-go="p-${slugOf(pages[0])}">Review</a>`:''}</div>`;
-  h+=`</div>`;
-  if(uc && keyDates.length){h+=`<div class="card" style="margin-top:14px"><span class="klabel">Important dates</span>${keyDates.map(d=>`<div class="row" style="margin-top:8px"><span>${esc(d.label)}</span><span style="color:var(--muted)">${esc(d.date)}</span></div>`).join('')}</div>`;}
-  if(uc){ const agent=(pages[0]&&pages[0].content&&pages[0].content.agent)||{}; h+=`<div class="card" style="margin-top:14px"><span class="klabel">Your team</span>`+teamRow(agent.name||'Your agent','Agent',agent.phone)+((lender&&(lender.name||lender.phone))?teamRow(lender.name||'Versatile Lending','Lender',lender.phone):'')+`</div>`; }
-  if(latestUpdate && !closed)h+=`<div class="card" style="margin-top:14px"><span class="klabel">From your agent</span><p style="margin:6px 0 0">${esc(latestUpdate.text)}</p></div>`;
-  if(tour && !uc && !closed)h+=`<div class="card" style="margin-top:14px"><span class="klabel">Homes, ranked by the group</span><div id="rankList" style="margin-top:10px"></div><div class="why" style="margin-top:8px">Ranked from your ratings \u2014 Jade weighs Love over Maybe. Rate homes on the Tour tab.</div></div>`;
-  h+=`<div class="tiles">`; for(const p of pages)h+=`<div class="tile" data-go="p-${slugOf(p)}">${esc(labelOf(p))}<div class="k">Open</div></div>`;
-  if(tour)h+=`<div class="tile" data-go="tour">Tour<div class="k">Rate homes</div></div>`;
-  h+=`<div class="tile" data-go="messages">Messages<div class="k">Reach your agent</div></div><div class="tile" data-go="settings">Settings<div class="k">Notifications</div></div></div></div>`; return h;
+const _WD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function dayName(d){ try{ const p=String(d).split('-'); const dt=new Date(+p[0],+p[1]-1,+p[2]); return _WD[dt.getDay()]||''; }catch(e){ return ''; } }
+function journeyStepper(stage, kind, touring){
+  const steps = kind==='sell'?['Preparing','On market','Under contract','Closing']:['Search','Touring','Under contract','Closing'];
+  let active; if(stage==='closed')active=4; else if(stage==='closing')active=3; else if(stage==='under_contract')active=2; else active=(kind==='sell')?1:(touring?1:0);
+  let h=`<div class="jrny"><span class="jlbl">Your ${kind==='sell'?'selling':'buying'} journey</span>`;
+  steps.forEach((st,i)=>{ if(i)h+=`<span class="jline${i<=active?' done':''}"></span>`; const cls=i<active?'done':(i===active?'on':''); h+=`<span class="jstep ${cls}"><span class="jdot"></span>${esc(st)}</span>`; });
+  return h+`</div>`;
+}
+function todaySection(pages, clientName, stage, lender, agent, brandHead, kind){
+  agent=agent||{};
+  let openList=[], keyDates=[], latestUpdate=null;
+  for(const p of pages){const c=p.content||{};(c.updates||[]).forEach(u=>{if(u&&u.text&&!latestUpdate)latestUpdate=u;});(c.nextSteps||[]).forEach(st=>{if(st&&st.text&&!st.done)openList.push({text:st.text,slug:slugOf(p)});});(c.keyDates||[]).forEach(d=>keyDates.push(d));}
+  const td=tourDaysOf(pages); const upcoming=td?td.days.filter(d=>(d.date||'')>=todayStr()):[]; const nextDay=upcoming[0];
+  const uc=stage==='under_contract'||stage==='closing', closed=stage==='closed'; const touring=!!nextDay;
+  const sub = closed?'Your journey with us, start to close.':(uc?'On the path to closing.':(kind==='sell'?'Your listing, thoughtfully organized.':'Your home search, thoughtfully organized.'));
+  let h=`<div data-sec="today"><h1 id="greet">Welcome back, ${esc(clientName)}.</h1><p class="sub">${esc(sub)}</p>`;
+  h+=journeyStepper(stage, kind, touring);
+  let band;
+  if(closed){ band={k:'Congratulations',big:'It’s official — welcome home.',meta:'Your transaction has closed. Thank you for trusting us.',btn:null}; }
+  else if(uc){ const cl=keyDates.find(d=>/clos/i.test(d.label||'')); let m='You’re under contract.'; if(cl&&cl.date){const dl=Math.ceil((new Date(cl.date+'T12:00:00Z').getTime()-Date.now())/86400000); m=dl>0?('Closing '+fmtDate(cl.date)+' · '+dl+' day'+(dl===1?'':'s')+' to go'):('Closing '+fmtDate(cl.date));} band={k:'Milestone',big:'You’re under contract',meta:m,btn:pages[0]?{label:'View roadmap',go:'p-'+slugOf(pages[0])}:null}; }
+  else if(nextDay){ const n=nextDay.stops.length; const fs=nextDay.stops[0]||{}; const dn=dayName(nextDay.date); band={k:'Up next',big:(dn?dn+'’s home tour':'Your next tour'),meta:fmtDate(nextDay.date)+' · '+n+' home'+(n===1?'':'s')+(fs.time?' · '+fs.time:''),btn:{label:'View tour & homes',go:'tour'}}; }
+  else if(latestUpdate){ band={k:'Latest',big:'A note from your agent',meta:latestUpdate.text,btn:pages[0]?{label:'Open',go:'p-'+slugOf(pages[0])}:null}; }
+  else { band={k:'Welcome',big:(kind==='sell'?'Your home sale starts here':'Your home search starts here'),meta:'Everything we’re working on together lives in one place.',btn:pages[0]?{label:'Get started',go:'p-'+slugOf(pages[0])}:null}; }
+  h+=`<div class="upnext"><div style="min-width:0"><div class="k">${esc(band.k)}</div><div class="big">${esc(band.big)}</div><div class="meta">${esc(band.meta)}</div></div>`+(band.btn?`<div class="cta"><a class="btnw" data-go="${esc(band.btn.go)}">${esc(band.btn.label)} →</a></div>`:'')+`</div>`;
+  if(openList.length){ h+=`<div class="card" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="p-${esc(st.slug)}"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="na">→</span></div>`).join('')+`</div></div>`; }
+  const guide=pages.find(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
+  const col1 = guide?`<div class="card ovlink" data-go="p-${esc(slugOf(guide))}"><span class="klabel">Explore</span><div class="big" style="font-size:20px">${esc(labelOf(guide))}</div><div class="why" style="margin-top:4px">Your guide — tap to open.</div></div>`:'';
+  const first=esc((agent.name||'your agent').split(' ')[0]);
+  const noteText=(latestUpdate&&latestUpdate.text)?latestUpdate.text:'We’ll keep your favorites, questions, and next steps together here.';
+  const col2=`<div class="card"><div class="notecard">`+(brandHead?`<img src="${esc(brandHead)}" alt="">`:'')+`<div style="min-width:0"><span class="klabel">A note from ${first}</span><p style="margin:6px 0 10px">${esc(noteText)}</p><a class="btn small" data-go="messages">Message ${first} →</a></div></div></div>`;
+  h+=`<div class="ovcards">${col1}${col2}</div>`;
+  return h+`</div>`;
 }
 function homesSection(allHomes, fb){ const ranked=(allHomes||[]).slice().sort((a,b)=>avgScore(fb,(b.id||b.address))-avgScore(fb,(a.id||a.address))); let h=`<div data-sec="homes" hidden><h1>Homes</h1><p class="sub">Every home you’ve toured or we’ve added — ranked by your group. Loved homes rise to the top.</p><div style="margin-top:14px">`+ranked.map(propCard).join('')+`</div></div>`; return h; }
 function tourSection(pages, clientSlug, fb){
@@ -1201,7 +1241,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
     body=`<div class="nav"><div class="in">${brandMark}<div class="tabs">${tabs}</div></div></div><div class="wrap">`;
   }
   if(manage)body+=`<div style="max-width:720px;margin:14px auto 0;background:#fff8e1;border:1px solid #f0d68a;color:#7a5b12;border-radius:10px;padding:10px 14px;font-size:13px">Agent preview — you’re viewing this hub as yourself. Drafts are shown here; your client only sees published pages.</div>`;
-  body+=todaySection(pages,clientName,stage,lender);
+  body+=todaySection(pages,clientName,stage,lender,agent,brand&&brand.headshotUrl,initJ);
   for(const p of visiblePages)body+=pageSection(p);
   body+=tourSection(pages,clientSlug,fb);
   if(allHomes.length)body+=homesSection(allHomes, fb);
