@@ -699,7 +699,7 @@ const _isHex6 = (c) => /^#[0-9a-fA-F]{6}$/.test(c || '');
 const _rgb6 = (h) => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
 const _lum6 = (h) => { const v=_rgb6(h).map(x=>{x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)}); return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2]; };
 const _ct6 = (a,b) => { const la=_lum6(a)+0.05, lb=_lum6(b)+0.05; return la>lb?la/lb:lb/la; };
-const textOn6 = (bg) => { try{ if(!_isHex6(bg)) return '#15201a'; return _lum6(bg)>0.55?'#15201a':'#ffffff'; }catch{ return '#15201a'; } };
+const textOn6 = (bg) => { try{ if(!_isHex6(bg)) return '#15201a'; const w=_ct6('#ffffff',bg), d=_ct6('#15201a',bg); return w>=d?'#ffffff':'#15201a'; }catch{ return '#15201a'; } };
 const readableOn6 = (color,bg) => { try{ bg=_isHex6(bg)?bg:'#ffffff'; if(!_isHex6(color)) return textOn6(bg); if(_ct6(color,bg)>=4.5) return color; const toward=_lum6(bg)>0.5?0:255; let c=_rgb6(color); for(let i=0;i<16;i++){ c=c.map(x=>Math.round(x+(toward-x)*0.16)); const h='#'+c.map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join(''); if(_ct6(h,bg)>=4.5) return h; } return textOn6(bg); }catch{ return textOn6(bg); } };
 
 function field(q) {
