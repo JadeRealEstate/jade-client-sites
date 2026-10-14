@@ -1196,7 +1196,6 @@ function todaySection(pages, clientName, stage, lender, agent, brandHead, kind){
   else if(latestUpdate){ band={k:'Latest',big:'A note from your agent',meta:latestUpdate.text,btn:{label:'Open roadmap',go:'roadmap'}}; }
   else { band={k:'Welcome',big:(kind==='sell'?'Your home sale starts here':'Your home search starts here'),meta:'Everything we’re working on together lives in one place.',btn:{label:'Get started',go:'homestours'}}; }
   h+=`<div class="upnext"><div style="min-width:0"><div class="k">${esc(band.k)}</div><div class="big">${esc(band.big)}</div><div class="meta">${esc(band.meta)}</div></div>`+(band.btn?`<div class="cta"><a class="btnw" data-go="${esc(band.btn.go)}">${esc(band.btn.label)} →</a></div>`:'')+`</div>`;
-  if(kind==='sell'){ const _L=listingOf(pages); if(_L) h+=listingCard(_L); }
   if(openList.length){ h+=`<div class="card" id="todayNext" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="roadmap" data-stepid="${esc(st.id)}"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="nsar">→</span></div>`).join('')+`</div></div>`; }
   const guide=pages.find(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
   const col1 = guide?`<div class="card ovlink" data-go="p-${esc(slugOf(guide))}"><span class="klabel">Explore</span><div class="big" style="font-size:20px">${esc(labelOf(guide))}</div><div class="why" style="margin-top:4px">Your guide — tap to open.</div></div>`:'';
@@ -1294,16 +1293,19 @@ function homesToursSection(pages, clientSlug, fb, allHomes){
   if(!any) h+=`<p class="sub">Saved homes and tours will appear here as your agent adds them.</p>`;
   return h+`</div>`;
 }
-function listingSection(sc){
+function listingSection(sc, pages){
   sc=sc||{}; const ev=[];
   (sc.updates||[]).forEach(u=>ev.push({date:u.date||'',label:'Update',detail:u.text||''}));
   (sc.offers||[]).forEach(oo=>ev.push({date:oo.by||oo.date||'',label:'Offer',detail:(oo.amount||'')+(oo.terms?(' · '+oo.terms):'')}));
   (sc.showings||[]).forEach(x=>ev.push({date:'',when:x.when||'',label:'Showing',detail:x.note||''}));
+  (sc.openHouses||[]).forEach(o=>ev.push({date:'',when:o.when||'',label:'Open house',detail:o.note||''}));
   (sc.keyDates||[]).forEach(d=>ev.push({date:d.date||'',label:d.label||'Milestone',detail:''}));
+  const L=(pages?listingOf(pages):null)||sc.listing||null;
   let h=`<div data-sec="listing" hidden><h1>Your listing</h1>`;
-  if(!ev.length) return h+`<p class="sub">Your listing’s story — showings, feedback, and offers — will build here.</p></div>`;
+  if(L) h+=listingCard(L);
+  if(!ev.length){ if(!L) h+=`<p class="sub">Your listing’s story — showings, feedback, and offers — will build here.</p>`; else h+=`<p class="sub" style="margin-top:16px">Updates — showings, feedback, and offers — will build here as they happen.</p>`; return h+`</div>`; }
   ev.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-  h+=`<p class="sub">Everything happening with your listing, newest first.</p><div style="margin-top:14px">`;
+  h+=`<p class="sub" style="margin-top:${L?'20px':'0'}">Everything happening with your listing, newest first.</p><div style="margin-top:14px">`;
   ev.forEach(e=>{ const when=e.date?fmtDate(e.date):(e.when||''); h+=`<div class="prop"><div class="row"><span class="addr">${esc(e.label)}</span><span style="color:var(--muted);font-size:13px">${esc(when)}</span></div>${e.detail?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(e.detail)}</div>`:''}</div>`; });
   return h+`</div></div>`;
 }
@@ -1378,7 +1380,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(rawManage)body+=`<div class="agenttb"><span>${asClient?'Previewing as your client \u2014 only published content shows':'Agent view \u00b7 drafts visible'}</span>`+(asClient?`<a href="?">Back to agent view</a>`:`<a href="?asclient=1">Preview as client \u2192</a>`)+`</div>`;
   body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
   if(hasBuyJ)body+=homesToursSection(pages,clientSlug,fb,allHomes);
-  if(hasSellJ)body+=listingSection(sc);
+  if(hasSellJ)body+=listingSection(sc,pages);
   body+=roadmapSection(pages,stage,initJ,seller);
   body+=resourcesSection(pages,agentNm,dualJ);
   for(const p of visiblePages)if(p.page_type==='custom')body+=pageSection(p);
