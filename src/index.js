@@ -694,6 +694,13 @@ const JADE_STANDARD = {
 // Public questionnaire form (buyer/seller) rendered by the hub Worker.
 // Client fills it via a shareable link; answers POST straight into questionnaire_responses.
 const escH = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Contrast helpers (brand colorways can be any lightness; keep text readable).
+const _isHex6 = (c) => /^#[0-9a-fA-F]{6}$/.test(c || '');
+const _rgb6 = (h) => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
+const _lum6 = (h) => { const v=_rgb6(h).map(x=>{x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)}); return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2]; };
+const _ct6 = (a,b) => { const la=_lum6(a)+0.05, lb=_lum6(b)+0.05; return la>lb?la/lb:lb/la; };
+const textOn6 = (bg) => { try{ if(!_isHex6(bg)) return '#15201a'; return _lum6(bg)>0.55?'#15201a':'#ffffff'; }catch{ return '#15201a'; } };
+const readableOn6 = (color,bg) => { try{ bg=_isHex6(bg)?bg:'#ffffff'; if(!_isHex6(color)) return textOn6(bg); if(_ct6(color,bg)>=4.5) return color; const toward=_lum6(bg)>0.5?0:255; let c=_rgb6(color); for(let i=0;i<16;i++){ c=c.map(x=>Math.round(x+(toward-x)*0.16)); const h='#'+c.map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join(''); if(_ct6(h,bg)>=4.5) return h; } return textOn6(bg); }catch{ return textOn6(bg); } };
 
 function field(q) {
   const req = q.required ? ' required' : '';
@@ -748,11 +755,24 @@ function renderQuestionnairePage(opts) {
   const primary = cw ? cw.bg : ((brandOn && b.primaryColor) ? b.primaryColor : '#335143');
   const secondary = (cw && HEX6(cw.btn)) ? cw.btn : ((brandOn && b.secondaryColor) ? b.secondaryColor : '#546751');
   const accent = (cw && HEX6(cw.chip)) ? cw.chip : ((brandOn && b.accentColor) ? b.accentColor : '#b08d57');
-  const logo = brandOn ? ((b.logos && (b.logos.horizontal || b.logos.square)) || b.logoUrl || '') : '';
   const _qsk = styleKey(b.style); const _qhead = _qsk==='luxury' ? "'Cormorant Garamond',Georgia,serif" : _qsk==='editorial' ? "'Fraunces',Georgia,serif" : "'DM Serif Display',Georgia,serif";
-  const brandName = (brandOn && (b.displayName || b.business)) ? (b.displayName || b.business) : '';
   const brandCss = colorsOn ? `<style>:root{--jade:${escH(primary)};--jade2:${escH(secondary)};--gold:${escH(accent)}}</style>` : '';
-  const markHtml = brandOn ? (logo ? `<img src="${escH(logo)}" alt="" style="height:32px;width:auto;max-width:180px;object-fit:contain">` : `<span class="mark">${escH(brandName || agentName || '')}</span>`) : `<span class="mark">Jade</span>`;
+  // Logo: agent chooses their own brand or the Jade Real Estate wordmark (saved per questionnaire).
+  const agentLogo = (b.logos && (b.logos.horizontal || b.logos.square)) || b.logoUrl || '';
+  const agentNm = b.displayName || b.business || agentName || '';
+  const logoChoice = (schema && (schema.logoChoice === 'jade' || schema.logoChoice === 'agent')) ? schema.logoChoice : (brandOn ? 'agent' : 'jade');
+  const jadeMark = `<span class="jmark"><span class="jm1">Jade</span><span class="jm2">Real Estate</span></span>`;
+  const markHtml = (logoChoice === 'jade')
+    ? jadeMark
+    : (agentLogo ? `<img class="brandlogo" src="${escH(agentLogo)}" alt="${escH(agentNm)}">` : (agentNm ? `<span class="mark">${escH(agentNm)}</span>` : jadeMark));
+  // Contrast-safe: brand colors used as TEXT on the light card/page get darkened if needed.
+  const _txtH = readableOn6(primary, '#ffffff');
+  const _txtMeta = readableOn6(accent, '#ffffff');
+  const _txtWho = readableOn6(secondary, '#f2efeb');
+  const _txtMark = readableOn6(primary, '#f2efeb');
+  const _btnBg = cw ? secondary : primary;
+  const _onBtn = textOn6(_btnBg);
+  const colorOverride = colorsOn ? `<style>h2,.done .big{color:${_txtH}}.secmeta{color:${_txtMeta}}.brand .who{color:${_txtWho}}.brand .mark{color:${_txtMark}}.prog>i{background:${primary}}.btn.prim{background:${_btnBg};color:${_onBtn}}.btn.prim:hover{background:${_btnBg};filter:brightness(.93)}</style>` : '';
   const body = secs.map((s,i)=>section(s,i,total)).join('');
   const schemaJson = JSON.stringify(schema).replace(/</g,'\\u003c');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23335143%27%2F%3E%3Ctext%20x%3D%2750%%27%20y%3D%2753%%27%20dominant-baseline%3D%27central%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%26quot%3BTimes%20New%20Roman%26quot%3B%2Cserif%27%20font-style%3D%27italic%27%20font-size%3D%2746%27%20font-weight%3D%27400%27%20fill%3D%27%23f2efeb%27%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E">
@@ -769,6 +789,9 @@ body{margin:0;background:var(--cream);color:var(--ink);font-family:Montserrat,sy
 .brand .mark{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:22px;color:var(--jade)}
 .brand .who{font-size:12px;color:var(--jade2)}
 .brandlogo{height:26px;width:auto;max-width:180px;display:block;object-fit:contain}
+.jmark{display:inline-flex;flex-direction:column;align-items:center;line-height:1}
+.jmark .jm1{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:24px;color:#335143}
+.jmark .jm2{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#546751;margin-top:3px}
 .card{background:var(--white);border:1px solid rgba(166,182,164,.5);border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(21,32,26,.06)}
 .prog{height:6px;background:var(--cream);border-radius:99px;overflow:hidden;margin-bottom:18px}
 .prog > i{display:block;height:100%;background:var(--jade);width:0;transition:width .25s}
@@ -797,7 +820,7 @@ textarea.in{resize:vertical}
 .done .big{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:30px;color:var(--jade);margin-bottom:8px}
 .done p{color:var(--ink);opacity:.75}
 .foot{text-align:center;font-size:11px;color:var(--jade2);margin-top:18px}
-</style>${brandCss}${brandOn?(styleFontsLink(b.style)+styleOverrideCss(b.style)+'<style>.brand .mark{font-family:'+_qhead+' !important;font-style:'+(_qsk==='jade_standard'?'italic':'normal')+'}</style>'):''}</head>
+</style>${brandCss}${brandOn?(styleFontsLink(b.style)+styleOverrideCss(b.style)+'<style>.brand .mark{font-family:'+_qhead+' !important;font-style:'+(_qsk==='jade_standard'?'italic':'normal')+'}</style>'):''}${colorOverride}</head>
 <body><div class="wrap">
 <div class="brand">${markHtml}<span class="who">${who}</span></div>
 <div class="card">
