@@ -1167,6 +1167,18 @@ function journeyStepper(stage, kind, touring){
   steps.forEach((st,i)=>{ if(i)h+=`<span class="jline${i<=active?' done':''}"></span>`; const cls=i<active?'done':(i===active?'on':''); h+=`<span class="jstep ${cls}"><span class="jdot"></span>${esc(st)}</span>`; });
   return h+`</div>`;
 }
+function listingOf(pages){ for(const p of pages){ const c=p.content||{}; if(c.listing && (c.listing.address||c.listing.price||c.listing.status)) return c.listing; } return null; }
+function listingCard(L){
+  if(!L) return '';
+  const line=[L.beds&&(esc(L.beds)+' bd'), L.baths&&(esc(L.baths)+' ba'), L.sqft&&(esc(L.sqft)+' sqft')].filter(Boolean).join(' · ');
+  const sub=[line, L.propertyType&&esc(L.propertyType)].filter(Boolean).join(' · ');
+  const st=esc(L.status||'Active');
+  return `<div class="card" style="margin-top:16px"><div class="row" style="align-items:flex-start;gap:12px"><div style="min-width:0"><span class="klabel">Your listing</span><div class="big" style="font-size:22px;margin-top:2px">${esc(L.address||'Your home')}</div>`
+    + (L.price?`<div style="font-size:19px;color:var(--jade);font-weight:700;margin-top:4px">${esc(L.price)}</div>`:'')
+    + (sub?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${sub}</div>`:'')
+    + (L.mls?`<div style="color:var(--muted);font-size:12px;margin-top:4px">MLS #${esc(L.mls)}</div>`:'')
+    + `</div><span style="flex:0 0 auto;font-size:12px;font-weight:700;background:rgba(51,81,67,.1);color:var(--jade);border-radius:99px;padding:5px 12px;white-space:nowrap">${st}</span></div></div>`;
+}
 function todaySection(pages, clientName, stage, lender, agent, brandHead, kind){
   agent=agent||{};
   let openList=[], keyDates=[], latestUpdate=null;
@@ -1183,6 +1195,7 @@ function todaySection(pages, clientName, stage, lender, agent, brandHead, kind){
   else if(latestUpdate){ band={k:'Latest',big:'A note from your agent',meta:latestUpdate.text,btn:{label:'Open roadmap',go:'roadmap'}}; }
   else { band={k:'Welcome',big:(kind==='sell'?'Your home sale starts here':'Your home search starts here'),meta:'Everything we’re working on together lives in one place.',btn:{label:'Get started',go:'homestours'}}; }
   h+=`<div class="upnext"><div style="min-width:0"><div class="k">${esc(band.k)}</div><div class="big">${esc(band.big)}</div><div class="meta">${esc(band.meta)}</div></div>`+(band.btn?`<div class="cta"><a class="btnw" data-go="${esc(band.btn.go)}">${esc(band.btn.label)} →</a></div>`:'')+`</div>`;
+  if(kind==='sell'){ const _L=listingOf(pages); if(_L) h+=listingCard(_L); }
   if(openList.length){ h+=`<div class="card" id="todayNext" style="margin-top:16px"><span class="klabel">Your next steps</span><div class="nextlist">`+openList.slice(0,5).map(st=>`<div class="nl" data-go="roadmap" data-stepid="${esc(st.id)}"><span class="nc"></span><span class="nt">${esc(st.text)}</span><span class="nsar">→</span></div>`).join('')+`</div></div>`; }
   const guide=pages.find(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
   const col1 = guide?`<div class="card ovlink" data-go="p-${esc(slugOf(guide))}"><span class="klabel">Explore</span><div class="big" style="font-size:20px">${esc(labelOf(guide))}</div><div class="why" style="margin-top:4px">Your guide — tap to open.</div></div>`:'';
@@ -1228,6 +1241,7 @@ function activitySection(sc){
   (sc.updates||[]).forEach(u=>ev.push({date:u.date||'',label:'Update',detail:u.text||''}));
   (sc.offers||[]).forEach(o=>ev.push({date:o.by||o.date||'',label:'Offer received',detail:(o.amount||'')+(o.terms?(' · '+o.terms):'')}));
   (sc.showings||[]).forEach(x=>ev.push({date:'',when:x.when||'',label:x.feedback?'Showing feedback':'Showing',detail:x.note||''}));
+  (sc.openHouses||[]).forEach(o=>ev.push({date:'',when:o.when||'',label:'Open house',detail:o.note||''}));
   (sc.keyDates||[]).forEach(d=>ev.push({date:d.date||'',label:d.label||'Milestone',detail:''}));
   let h=`<div data-sec="activity" hidden><h1>Activity</h1>`;
   if(!ev.length){ return h+`<p class="sub">Your listing’s story will build here — showings, feedback, price changes, and offers.</p></div>`; }
