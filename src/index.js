@@ -902,7 +902,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Montserrat',system-ui,-a
 .nav{position:sticky;top:0;z-index:20;background:rgba(245,242,236,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .nav .in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:24px;padding:15px 22px}
 .brand{font-family:'DM Serif Display',Georgia,serif;font-style:italic;color:var(--jade);font-size:25px;white-space:nowrap}
-.brandlogo{height:40px;width:auto;max-width:230px;display:block;object-fit:contain}
+.brandlogo{height:40px;width:auto;max-width:230px;display:block;object-fit:contain}.jwm{display:inline-flex;flex-direction:column;line-height:1}.jwm .jwm1{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:25px;color:#335143}.jwm .jwm2{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#546751;margin-top:3px}
 .tabs{display:flex;flex-wrap:wrap;gap:2px 6px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tab{border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--muted);padding:12px 14px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer}
 .tab:hover{color:var(--ink)}.tab.active{color:var(--jade);border-bottom-color:var(--jade)}
@@ -1325,7 +1325,9 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
   const _brandName = brand.business || brand.displayName || brand.fullName || '';
   const _logoOk = _logoUrl && /^(https?:|data:image\/|\/\/|\/)/i.test(_logoUrl);
-  const brandMark = _logoOk ? ('<img class="brandlogo" src="'+esc(_logoUrl)+'" alt="'+esc(_brandName||'Agent')+'">') : ('<span class="brand">'+esc(_brandName||'Jade')+'</span>');
+  const _logoChoice = (pages.find(p=>p.content && (p.content.logoChoice==='jade'||p.content.logoChoice==='agent'))||{content:{}}).content.logoChoice || 'agent';
+  const _jadeWordmark = '<span class="jwm"><span class="jwm1">Jade</span><span class="jwm2">Real Estate</span></span>';
+  const brandMark = (_logoChoice==='jade') ? _jadeWordmark : (_logoOk ? ('<img class="brandlogo" src="'+esc(_logoUrl)+'" alt="'+esc(_brandName||'Agent')+'">') : ('<span class="brand">'+esc(_brandName||'Jade')+'</span>'));
   const clientName=(pages[0]&&pages[0].client_name)||'there';
   const agent=(pages.find(p=>p.content&&p.content.agent)||{content:{}}).content.agent||{};
   const showAgent=!pages.some(p=>p.content&&p.content.showAgent===false);
