@@ -1173,7 +1173,8 @@ function listingCard(L){
   const line=[L.beds&&(esc(L.beds)+' bd'), L.baths&&(esc(L.baths)+' ba'), L.sqft&&(esc(L.sqft)+' sqft')].filter(Boolean).join(' · ');
   const sub=[line, L.propertyType&&esc(L.propertyType)].filter(Boolean).join(' · ');
   const st=esc(L.status||'Active');
-  return `<div class="card" style="margin-top:16px"><div class="row" style="align-items:flex-start;gap:12px"><div style="min-width:0"><span class="klabel">Your listing</span><div class="big" style="font-size:22px;margin-top:2px">${esc(L.address||'Your home')}</div>`
+  const _ph=(L.photoUrl&&/^https?:/i.test(L.photoUrl))?`<div style="margin-bottom:12px"><img src="${esc(L.photoUrl)}" alt="" style="display:block;width:100%;max-height:240px;object-fit:cover;border-radius:12px"></div>`:'';
+  return `<div class="card" style="margin-top:16px">${_ph}<div class="row" style="align-items:flex-start;gap:12px"><div style="min-width:0"><span class="klabel">Your listing</span><div class="big" style="font-size:22px;margin-top:2px">${esc(L.address||'Your home')}</div>`
     + (L.price?`<div style="font-size:19px;color:var(--jade);font-weight:700;margin-top:4px">${esc(L.price)}</div>`:'')
     + (sub?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${sub}</div>`:'')
     + (L.mls?`<div style="color:var(--muted);font-size:12px;margin-top:4px">MLS #${esc(L.mls)}</div>`:'')
