@@ -1904,6 +1904,9 @@ function renderLanding(slug,page,ag){
   const bullets=(Array.isArray(d.guideBullets)?d.guideBullets:[]).filter(Boolean).slice(0,4);
   const cta=esc(d.ctaText||'Get the guide');
   const capture='https://agentapp.jaderealestate.com/api/lead-capture';
+  const reassureDefault="You won\u2019t get any automated messages from me \u2014 I\u2019ll only reach out personally, to hear your thoughts or answer a question.";
+  const reassureTxt=(typeof d.reassure==='string')?d.reassure:reassureDefault;
+  const reassureHtml=reassureTxt?`<div class="pnote">${esc(reassureTxt)}</div>`:'';
   const showForm=hasGuide||action!=='guide'||!!(d.ctaText||d.guideHeadline);
   const chipLabel=action==='homes'?'Get homes':action==='tour'?'Book a tour':(hasGuide?'Free guide':'Get the guide');
   const formHeadline=esc(d.guideHeadline||(hasGuide?(g.label||'Grab my free guide'):(d.ctaText||'Request a consultation')));
@@ -1924,7 +1927,7 @@ function renderLanding(slug,page,ag){
         ${guides.length>1?`<div class="ghint">Enter your info once, then grab any guide below.</div>`:''}
         <div class="gitems">${guideItems}</div>
         <div class="err" id="err"></div>
-      </form>
+      </form>${reassureHtml}
     </div>`;
   let captureCard=guideMode?guideCard:(showForm?`
     <div class="card" id="box">
@@ -1939,7 +1942,7 @@ function renderLanding(slug,page,ag){
         ${action==='homes'?`<textarea id="msg" name="message" rows="2" placeholder="Anything specific you\u2019re looking for? (optional)" style="resize:vertical;font-family:inherit"></textarea>`:''}
         <button type="submit" id="sb">${cta}</button>
         <div class="err" id="err"></div>
-      </form>
+      </form>${reassureHtml}
       ${(action==='tour'&&bookingUrl)?`<a class="lk" style="margin-top:10px;background:var(--btn);border:0;color:#fff" href="${esc(bookingUrl)}" target="_blank" rel="noopener">Book a time now</a>`:''}
     </div>`:'');
   const instant=d.deliver==='instant'&&guideMode;
@@ -2004,6 +2007,7 @@ button:disabled{opacity:.6}
 .gititle{font-weight:800;font-size:15px;margin:0 0 2px}
 .gitem .gb{margin:6px 0 10px}
 .ghint{font-size:12px;color:#55624f;margin-top:2px}
+.pnote{font-size:12px;color:#7a8178;margin-top:11px;line-height:1.45;text-align:center}
 .err{font-size:12px;color:#b3261e;min-height:1px}
 .lk{display:block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;text-decoration:none;text-align:center;padding:15px;border-radius:12px;font-weight:700;font-size:15.5px;margin-bottom:12px;transition:transform .06s,background .15s}
 .lk:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
