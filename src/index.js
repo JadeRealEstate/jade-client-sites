@@ -1369,7 +1369,58 @@ function resourcesSection(pages, agentNm, dualJ){
   if(!any) h+=`<p class="sub" style="margin-top:12px">Your agent hasn’t added resources yet.</p>`;
   return h+`</div>`;
 }
-function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient, myUid){
+function commuteSection(commute){
+  if(!(commute&&commute.published)) return '';
+  return `<div data-sec="commute" hidden><h1>Compare commutes</h1><p class="sub">Drive times from each home to the places that matter to you — work, school, daycare, the gym. Add or edit any place, then compare.</p>`
+    +`<div class="card" style="margin-top:16px"><span class="klabel">Your regular places</span><p class="why" style="margin:4px 0 8px">Add as many as you like — two jobs, a school, a gym. Label each one.</p><div id="cmPlaces"></div><button type="button" class="btn small ghost" id="cmAddPlace" style="margin-top:8px">+ Add a place</button></div>`
+    +`<div class="card" style="margin-top:14px"><span class="klabel">Homes to compare</span><div id="cmHomes" style="margin-top:8px"></div><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn small ghost" id="cmAddHome">+ Add a home</button><button type="button" class="btn small ghost" id="cmPullFav">Use my saved favorites</button></div></div>`
+    +`<div style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button type="button" class="btn" id="cmRun">Compare commutes</button><span class="status" id="cmStatus"></span></div>`
+    +`<div id="cmResults" style="margin-top:16px"></div>`
+    +`<p class="why" style="margin-top:10px">Driving times from OpenStreetMap routing, typical conditions (not live traffic). Verify before relying on them.</p></div>`;
+}
+function commuteScript(commute, fav, cid){
+  const PL=(commute&&commute.places)||[]; const HM=(commute&&commute.homes)||[];
+  return `<script>(function(){
+  var SB=${JSON.stringify(SB)},ANON=${JSON.stringify(ANON)},CID=${JSON.stringify(cid)},API='https://agentapp.jaderealestate.com/api/commute';
+  var PLACES=${JSON.stringify(PL)},HOMES=${JSON.stringify(HM)},FAV=${JSON.stringify(fav||[])};
+  function tok(){var m=(document.cookie||'').match(/(?:^|; )sb_at=([^;]*)/);return m?decodeURIComponent(m[1]):'';}
+  function uid(){return Math.random().toString(36).slice(2,9);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function ids(a){a.forEach(function(x){if(!x.id)x.id=uid();});}
+  ids(PLACES);ids(HOMES);
+  if(!PLACES.length)PLACES.push({id:uid(),label:'Work',address:''});
+  var st=document.createElement('style');st.textContent='.cmin{flex:1;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--surface)}.cmdel{background:none;border:0;color:var(--muted);font:inherit;font-weight:600;cursor:pointer;padding:0 4px}';document.head.appendChild(st);
+  var saveT=null;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){
+    var body={client_id:CID,places:PLACES.map(function(p){return {id:p.id,label:(p.label||'').trim()||'Place',address:(p.address||'').trim(),mode:p.mode||'Driving'};}),homes:HOMES.map(function(h){return {id:h.id,label:(h.label||h.address||'').trim(),address:(h.address||'').trim()};}),published:true,updated_at:new Date().toISOString()};
+    fetch(SB+'/rest/v1/client_commute?on_conflict=client_id',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(tok()||ANON),'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)}).catch(function(){});
+  },600);}
+  function renderPlaces(){var el=document.getElementById('cmPlaces');if(!el)return;el.innerHTML=PLACES.map(function(p){return '<div style="display:flex;gap:8px;margin-bottom:8px"><input class="cmin cmlabel" data-pid="'+p.id+'" value="'+esc(p.label)+'" placeholder="Work" style="max-width:120px"><input class="cmin cmaddr" data-pid="'+p.id+'" value="'+esc(p.address)+'" placeholder="Full address, city, state"><button type="button" class="cmdel" data-pdel="'+p.id+'">Remove</button></div>';}).join('');}
+  function renderHomes(){var el=document.getElementById('cmHomes');if(!el)return;if(!HOMES.length){el.innerHTML='<p class="why">Add a home address, or use your saved favorites.</p>';return;}el.innerHTML=HOMES.map(function(h){return '<div style="display:flex;gap:8px;margin-bottom:8px"><input class="cmin cmhaddr" data-hid="'+h.id+'" value="'+esc(h.address)+'" placeholder="123 Elm St, Denver, CO"><button type="button" class="cmdel" data-hdel="'+h.id+'">Remove</button></div>';}).join('');}
+  renderPlaces();renderHomes();
+  document.addEventListener('input',function(e){var t=e.target;if(!t.classList)return;var pid=t.getAttribute('data-pid'),hid=t.getAttribute('data-hid');if(t.classList.contains('cmlabel')){var p=PLACES.filter(function(x){return x.id===pid;})[0];if(p){p.label=t.value;save();}}else if(t.classList.contains('cmaddr')){var p2=PLACES.filter(function(x){return x.id===pid;})[0];if(p2){p2.address=t.value;save();}}else if(t.classList.contains('cmhaddr')){var h=HOMES.filter(function(x){return x.id===hid;})[0];if(h){h.address=t.value;h.label=t.value;save();}}});
+  document.addEventListener('click',function(e){var t=e.target;if(!t.getAttribute)return;
+    if(t.id==='cmAddPlace'){PLACES.push({id:uid(),label:'',address:''});renderPlaces();return;}
+    if(t.id==='cmAddHome'){HOMES.push({id:uid(),label:'',address:''});renderHomes();return;}
+    if(t.id==='cmPullFav'){FAV.forEach(function(a){if(a&&!HOMES.some(function(h){return (h.address||'').toLowerCase()===String(a).toLowerCase();}))HOMES.push({id:uid(),label:a,address:a});});renderHomes();save();return;}
+    var pd=t.getAttribute('data-pdel');if(pd){PLACES=PLACES.filter(function(x){return x.id!==pd;});renderPlaces();save();return;}
+    var hd=t.getAttribute('data-hdel');if(hd){HOMES=HOMES.filter(function(x){return x.id!==hd;});renderHomes();save();return;}
+    if(t.id==='cmRun'){runCompare();return;}});
+  function runCompare(){var stt=document.getElementById('cmStatus'),btn=document.getElementById('cmRun');
+    var places=PLACES.filter(function(p){return (p.address||'').trim();}).map(function(p){return {label:(p.label||'').trim()||'Place',address:p.address.trim(),mode:'Driving'};});
+    var homes=HOMES.filter(function(h){return (h.address||'').trim();}).map(function(h){return {label:(h.label||h.address),address:h.address.trim()};});
+    if(!homes.length){if(stt)stt.textContent='Add at least one home.';return;}
+    if(!places.length){if(stt)stt.textContent='Add at least one place.';return;}
+    save();btn.disabled=true;if(stt)stt.textContent='Estimating…';
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok()},body:JSON.stringify({homes:homes,places:places,chain:false})}).then(function(r){return r.json();}).then(function(j){btn.disabled=false;if(stt)stt.textContent='';if(!j||!j.ok){if(stt)stt.textContent=(j&&j.error)||'Could not get estimates.';return;}renderResults(j,places);}).catch(function(){btn.disabled=false;if(stt)stt.textContent='Could not get estimates — try again.';});}
+  function renderResults(j,places){var el=document.getElementById('cmResults');if(!el)return;
+    var head='<tr><th style="text-align:left;padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Home</th>'+places.map(function(p){return '<th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">'+esc(p.label)+'</th>';}).join('')+'</tr>';
+    var rows=(j.results||[]).map(function(r){return '<tr style="border-top:1px solid var(--line)"><td style="padding:8px;font-weight:600">'+esc(r.home)+(r.found?'':' <span style=\"color:#b0563f;font-size:11px\">not found</span>')+'</td>'+(r.perPlace||[]).map(function(pp){return '<td style="padding:8px;text-align:center">'+(pp.minutes!=null?pp.minutes+' min':'—')+'</td>';}).join('')+'</tr>';}).join('');
+    var miss=(j.missingPlaces&&j.missingPlaces.length)?'<p class="why" style="margin-top:8px;color:#b0563f">Could not locate: '+j.missingPlaces.map(esc).join(', ')+' — check the address.</p>':'';
+    el.innerHTML='<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'+miss;}
+  })();</script>`;
+}
+function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient, myUid, commute){
   brand = brand || {};
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
   const _brandName = brand.business || brand.displayName || brand.fullName || '';
@@ -1400,6 +1451,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   const _afirst=esc((agentNm||'your agent').split(' ')[0]||'your agent');
   let tabs=`<button class="tab" data-tab="today" data-journey="both">Today</button>`;
   if(hasBuyJ)tabs+=`<button class="tab" data-tab="homestours" data-journey="buy">Homes &amp; Tours</button>`;
+  if(hasBuyJ&&commute&&commute.published)tabs+=`<button class="tab" data-tab="commute" data-journey="buy">Commute</button>`;
   if(hasSellJ)tabs+=`<button class="tab" data-tab="listing" data-journey="sell">Your listing</button>`;
   tabs+=`<button class="tab" data-tab="roadmap" data-journey="both">Roadmap</button>`;
   tabs+=`<button class="tab" data-tab="resources" data-journey="both">Resources</button>`;
@@ -1412,12 +1464,14 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(rawManage)body+=`<div class="agenttb"><span>${asClient?'Previewing as your client \u2014 only published content shows':'Agent view \u00b7 drafts visible'}</span>`+(asClient?`<a href="?">Back to agent view</a>`:`<a href="?asclient=1">Preview as client \u2192</a>`)+`</div>`;
   body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
   if(hasBuyJ)body+=homesToursSection(pages,clientSlug,fb,allHomes);
+  if(hasBuyJ&&commute&&commute.published)body+=commuteSection(commute);
   if(hasSellJ)body+=listingSection(sc,pages);
   body+=roadmapSection(pages,stage,initJ,seller);
   body+=resourcesSection(pages,agentNm,dualJ);
   for(const p of visiblePages)if(p.page_type==='custom')body+=pageSection(p);
   body+=messagesSection(agent.name);
   body+=settingsSection(vis,myEmail);
+  if(hasBuyJ&&commute&&commute.published)body+=commuteScript(commute,(allHomes||[]).map(h=>h.address).filter(Boolean),cid);
   const cEmail=((agent.email||'').trim())||((brand&&brand.email)||'');
   const cPhoneRaw=((agent.phone||'').trim())||((brand&&brand.phone)||'');
   const cTel=(cPhoneRaw||'').replace(/\D/g,''); const cT=cTel.length===10?'+1'+cTel:(cTel.length===11&&cTel[0]==='1'?'+'+cTel:'+'+cTel);
@@ -1505,6 +1559,7 @@ setInterval(loadChat,20000);
   return htmlResp(shell(_brandStyle+body, clientName+' · Jade Real Estate', _style),200);
 }
 
+async function fetchCommute(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_commute?select=places,homes,published&client_id=eq.${cid}&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return (Array.isArray(rows)&&rows[0])||null; }catch(e){ return null; } }
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
 async function fetchPrefs(cid, email, token){ try{ const r=await fetch(`${SB}/rest/v1/client_prefs?select=prefs&client_id=eq.${cid}&email=eq.${encodeURIComponent(email)}`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); const pr=(Array.isArray(rows)&&rows[0]&&rows[0].prefs)||{}; return pr.visibility||'shared'; }catch(e){ return 'shared'; } }
 async function fetchMsgs(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_messages?select=from_name,from_role,body,created_at&client_id=eq.${cid}&order=created_at.asc`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }catch(e){ return []; } }
@@ -1879,10 +1934,10 @@ export default {
       const cid=(pages[0]&&pages[0].client_id)||'';
       const em=((_user&&_user.email)||'').toLowerCase();
       const meName=(_user&&_user.user_metadata&&(_user.user_metadata.full_name||_user.user_metadata.name))||(em?em.split('@')[0].replace(/^./,c=>c.toUpperCase()):'You');
-      const [fb,vis,msgs]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok)]);
+      const [fb,vis,msgs,commute]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok),fetchCommute(cid,_tok)]);
       const _agb=await fetchAgentCard((pages[0]&&pages[0].agent_id)||'');
       const _brand=Object.assign({},(_agb&&_agb.brand)||{}); if(_agb&&_agb.name&&!_brand.fullName)_brand.fullName=_agb.name;
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient,(_user&&_user.id)||'');
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient,(_user&&_user.id)||'',commute);
     }catch(e){ return notFound(); }
   },
 };
