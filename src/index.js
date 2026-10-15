@@ -945,6 +945,16 @@ h2{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;c
 .chk{display:flex;gap:9px;align-items:flex-start;margin:8px 0}.chk .m{color:var(--jade);flex:none}.chk.done{opacity:.5;text-decoration:line-through}
 .stepitem{width:100%;text-align:left;background:none;border:0;font:inherit;color:inherit;cursor:pointer;padding:6px 0}
 .stepitem:hover .m{color:var(--jade)}
+.gterm{border-bottom:1px solid var(--line)}
+.gterm summary{cursor:pointer;padding:10px 2px;font-weight:600;list-style:none;font-size:14px;display:flex;align-items:center;gap:4px}
+.gterm summary::-webkit-details-marker{display:none}
+.gterm summary:before{content:'+';color:var(--jade);font-weight:700;margin-right:6px;width:12px;display:inline-block}
+.gterm[open] summary:before{content:'\u2212'}
+.gdef{padding:0 2px 12px 20px;color:var(--muted);font-size:13px;line-height:1.5}
+.gfilter{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--surface);margin-bottom:6px}
+.docnote{margin-top:8px;padding:8px 10px;background:var(--surface);border-left:3px solid var(--jade);border-radius:6px;color:var(--muted);font-size:13px;line-height:1.45}
+.pcn{color:var(--muted);font-weight:400}
+.recbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .tl{margin-top:10px}
 .tlrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
 .tlrow:last-child{border-bottom:0}
@@ -1002,6 +1012,8 @@ textarea{min-height:96px;resize:vertical}
 .gnote{font-size:13px;color:var(--ink);background:var(--cream);border-radius:9px;padding:8px 10px;margin-top:8px}
 .groupfb:empty{display:none}
 .vissel{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--surface)}
+.cain{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;background:var(--surface);min-width:0}
+.ctb{white-space:nowrap}
 .thread{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow-y:auto;padding:4px}
 .msg{display:flex;flex-direction:column;max-width:82%}
 .msg .mname{font-size:11px;color:var(--muted);margin:0 6px 2px}
@@ -1297,10 +1309,10 @@ function offersSection(sc){
 function docsCount(pages){ let n=0; for(const p of pages){((p.content||{}).documents||[]).forEach(d=>{if(d&&d.name)n++;});} return n; }
 function docsSection(pages, agentName){
   const docs=[];
-  for(const p of pages){const c=p.content||{};(c.documents||[]).forEach(d=>{if(d&&d.name)docs.push({name:d.name,type:d.type||'',url:d.url||'',from:labelOf(p)});});}
+  for(const p of pages){const c=p.content||{};(c.documents||[]).forEach(d=>{if(d&&d.name)docs.push({name:d.name,type:d.type||'',url:d.url||'',note:d.note||'',from:labelOf(p)});});}
   if(!docs.length) return '';
   let h=`<div data-sec="docs" hidden><h1>Documents</h1><p class="sub">Everything ${esc(agentName||'your agent')} has shared with you, in one place.</p><div style="margin-top:16px">`;
-  docs.forEach(d=>{ const u=(d.url&&/^(https?:|blob:)/i.test(d.url))?d.url:''; h+=`<div class="card" style="margin-top:10px"><div class="row" style="align-items:center;gap:12px"><div style="min-width:0"><div style="font-weight:700">${esc(d.name)}</div>`+((d.type||d.from)?`<div style="color:var(--muted);font-size:13px">${esc([d.type,d.from].filter(Boolean).join(' · '))}</div>`:'')+`</div>`+(u?`<a class="btn small ghost" href="${esc(u)}" target="_blank" rel="noreferrer">Open</a>`:`<span style="color:var(--muted);font-size:13px">Shared by your agent</span>`)+`</div></div>`; });
+  docs.forEach(d=>{ const u=(d.url&&/^(https?:|blob:)/i.test(d.url))?d.url:''; h+=`<div class="card" style="margin-top:10px"><div class="row" style="align-items:center;gap:12px"><div style="min-width:0"><div style="font-weight:700">${esc(d.name)}</div>`+((d.type||d.from)?`<div style="color:var(--muted);font-size:13px">${esc([d.type,d.from].filter(Boolean).join(' · '))}</div>`:'')+`</div>`+(u?`<a class="btn small ghost" href="${esc(u)}" target="_blank" rel="noreferrer">Open</a>`:`<span style="color:var(--muted);font-size:13px">Shared by your agent</span>`)+`</div>`+(d.note?`<div class="docnote">${esc(d.note)}</div>`:'')+`</div>`; });
   return h+`</div></div>`;
 }
 function infoHas(pages, lender, agent){ let kd=0; for(const p of pages){((p.content||{}).keyDates||[]).forEach(d=>{if(d&&d.label)kd++;});} const hasTeam=(agent&&(agent.name||agent.phone))||(lender&&(lender.name||lender.phone)); return kd>0||hasTeam; }
@@ -1341,6 +1353,7 @@ function listingSection(sc, pages){
   ev.forEach(e=>{ const when=e.date?fmtDate(e.date):(e.when||''); h+=`<div class="prop"><div class="row"><span class="addr">${esc(e.label)}</span><span style="color:var(--muted);font-size:13px">${esc(when)}</span></div>${e.detail?`<div style="color:var(--muted);font-size:14px;margin-top:4px">${esc(e.detail)}</div>`:''}</div>`; });
   return h+`</div></div>`;
 }
+function postCloseItems(pages){ var out=[]; for(var i=0;i<pages.length;i++){ var pc=(pages[i].content||{}).postClose; if(Array.isArray(pc)) pc.forEach(function(x){ if(x&&x.text) out.push({id:x.id||('pc'+i),text:x.text,note:x.note||''}); }); } return out; }
 function roadmapSection(pages, stage, kind, seller){
   const td=tourDaysOf(pages);
   let keyDates=[]; for(const p of pages){((p.content||{}).keyDates||[]).forEach(d=>{if(d&&d.label)keyDates.push(d);});}
@@ -1350,22 +1363,68 @@ function roadmapSection(pages, stage, kind, seller){
   h+=`<div style="margin-top:14px">`+journeyStepper(stage, kind, !!td)+`</div>`;
   if(steps.length){const pct=Math.round(doneN/steps.length*100);h+=`<div class="card stepcard" style="margin-top:16px"><div class="row"><span class="klabel">Your next steps</span><span class="klabel steptally">${doneN}/${steps.length} done</span></div><div class="bar"><i class="stepfill" style="width:${pct}%"></i></div>`+steps.map((st,si)=>`<button type="button" class="chk stepitem ${st.done?'done':''}" data-stepid="${esc(st.id)}"><span class="m">${st.done?'✓':'○'}</span><span>${esc(st.text)}</span></button>`).join('')+`</div>`;}
   if(keyDates.length){ h+=`<div class="card" style="margin-top:14px"><span class="klabel">Milestones &amp; key dates</span>`+keyDates.map(d=>`<div class="row" style="margin-top:10px"><span style="font-weight:600">${esc(d.label)}</span><span style="color:var(--muted)">${d.date?esc(fmtDate(d.date)):''}</span></div>`).join('')+`</div>`; }
-  if(!steps.length && !keyDates.length) h+=`<p class="why" style="margin-top:12px">Your milestones and next steps will appear here as your journey moves along.</p>`;
+  var pc=postCloseItems(pages); if(pc.length){ h+=`<div class="card stepcard" style="margin-top:16px"><div class="row"><span class="klabel">After you close</span><span class="klabel steptally">0/${pc.length} done</span></div><p class="why" style="margin:4px 0 6px">A few things to take care of once the keys are yours — check each off as you go.</p><div class="bar"><i class="stepfill" style="width:0%"></i></div>`+pc.map(function(st){return `<button type="button" class="chk stepitem" data-stepid="${esc(st.id)}"><span class="m">○</span><span>${esc(st.text)}${st.note?`<span class="pcn"> — ${esc(st.note)}</span>`:''}</span></button>`;}).join('')+`</div>`; }
+  if(!steps.length && !keyDates.length && !pc.length) h+=`<p class="why" style="margin-top:12px">Your milestones and next steps will appear here as your journey moves along.</p>`;
   return h+`</div>`;
 }
-function resourcesSection(pages, agentNm, dualJ){
+const GLOSSARY = [
+  { t:'Pre-approval', s:'buy', d:'A lender\'s written estimate of how much they\'ll lend you, based on a real look at your finances. Stronger than a pre-qualification, and what sellers want to see with an offer.' },
+  { t:'Earnest money', s:'buy', d:'A good-faith deposit (often around 1% of the price) you put down when your offer is accepted. It\'s held in escrow and credited toward your purchase at closing.' },
+  { t:'Down payment', s:'buy', d:'The cash you pay up front toward the price. The rest is covered by your mortgage. More down usually means a lower monthly payment.' },
+  { t:'Closing costs', s:'buy', d:'The fees to finalize your loan and purchase — lender, title, and prepaid taxes/insurance. For buyers this is usually about 2–3% of the price, on top of your down payment.' },
+  { t:'PMI', s:'buy', d:'Private mortgage insurance — an extra monthly charge when your down payment is under 20%. It protects the lender, and typically drops off once you have enough equity.' },
+  { t:'Points', s:'buy', d:'Optional fees paid to the lender up front to buy down your interest rate. One point is 1% of the loan amount.' },
+  { t:'DTI (debt-to-income)', s:'buy', d:'Your monthly debt payments divided by your gross monthly income. Lenders use it to decide how much you can borrow.' },
+  { t:'Inspection', s:'buy', d:'A professional once-over of the home\'s condition so you know what you\'re buying before you\'re locked in. It can be a contingency that lets you renegotiate or walk away.' },
+  { t:'Homestead exemption', s:'buy', d:'A property-tax break on your primary residence that you file for after you buy. It lowers the taxable value of your home.' },
+  { t:'Escalation clause', s:'buy', d:'An offer term that automatically raises your bid, up to a cap you set, if there are competing offers.' },
+  { t:'Contingency', s:'both', d:'A condition in the contract that has to be met or the deal can change or end. Common ones are inspection, appraisal, and financing — they protect you if something comes up.' },
+  { t:'Appraisal', s:'both', d:'A licensed, independent valuation of the home. Lenders require it to confirm the home is worth the loan amount.' },
+  { t:'Appraisal gap', s:'both', d:'When a home appraises for less than the agreed price. The contract spells out who makes up the difference — the buyer in cash, a lower price, or a mix.' },
+  { t:'Escrow', s:'both', d:'A neutral third party that holds money and documents until everyone has met the terms of the deal. Also the account your lender uses for taxes and insurance.' },
+  { t:'Title insurance', s:'both', d:'Protects you and your lender if someone later claims ownership or an unpaid debt against the home.' },
+  { t:'Under contract', s:'both', d:'You and the other party have a signed agreement and are working through the contingencies toward closing.' },
+  { t:'Closing (settlement)', s:'both', d:'The final step where everyone signs, funds transfer, and ownership changes hands. For buyers, it\'s when you get the keys.' },
+  { t:'HOA', s:'both', d:'Homeowners association — the group that maintains shared areas and sets community rules, funded by your dues. Review the rules and budget before you buy.' },
+  { t:'Special assessment', s:'both', d:'A one-time HOA charge for a large shared expense (a new roof, a repaved lot) beyond the regular dues.' },
+  { t:'Listing agreement', s:'sell', d:'Your contract with your agent to market and sell your home — it sets the terms, timeline, and commission.' },
+  { t:'CMA', s:'sell', d:'A comparative market analysis — a pricing study of recent nearby sales your agent uses to set the right list price for your home.' },
+  { t:'Net proceeds', s:'sell', d:'What you actually walk away with after your mortgage payoff, commissions, and closing costs come out of the sale price.' },
+  { t:'Days on market (DOM)', s:'sell', d:'How long your listing has been active. Buyers watch this, so pricing it right from the start matters.' },
+  { t:'Seller concessions', s:'sell', d:'Money you agree to credit the buyer, often toward their closing costs, to help a deal come together.' },
+  { t:'Staging', s:'sell', d:'Preparing and furnishing your home so it photographs and shows at its best — often a strong return for a small cost.' },
+];
+function glossaryBlock(pages, dualJ){
+  var extra=[]; for(var i=0;i<pages.length;i++){ var g=(pages[i].content||{}).glossary; if(Array.isArray(g)) g.forEach(function(x){ if(x&&x.term) extra.push({t:x.term,d:x.def||'',s:(x.side==='Buyer'?'buy':x.side==='Seller'?'sell':'both')}); }); }
+  var all=GLOSSARY.concat(extra);
+  // agent terms override built-ins with the same name (last wins)
+  var byKey={}, order=[]; all.forEach(function(x){ var k=(x.t||'').trim().toLowerCase(); if(!(k in byKey))order.push(k); byKey[k]=x; });
+  var terms=order.map(function(k){return byKey[k];}).sort(function(a,b){return a.t.localeCompare(b.t);});
+  if(!terms.length) return '';
+  function item(x){ return '<details class="gterm"><summary>'+esc(x.t)+(dualJ?' <span class="rtag '+(x.s==='sell'?'sel':x.s==='buy'?'buy':'')+'" style="font-size:9px;vertical-align:middle">'+(x.s==='sell'?'Seller':x.s==='buy'?'Buyer':'Both')+'</span>':'')+'</summary><div class="gdef">'+esc(x.d)+'</div></details>'; }
+  var body;
+  if(dualJ){ var buy=terms.filter(function(x){return x.s!=='sell';}); var sell=terms.filter(function(x){return x.s==='sell'||x.s==='both';});
+    body='<div class="gsearch-wrap">'+terms.map(item).join('')+'</div>';
+  } else {
+    body='<div class="gsearch-wrap">'+terms.map(item).join('')+'</div>';
+  }
+  return '<div style="margin-top:18px"><span class="klabel">Common terms, explained</span><p class="why" style="margin:4px 0 8px">Real-estate words you\'ll run into — in plain language. Tap any to expand.</p><input class="gfilter" type="text" placeholder="Search terms…" oninput="(function(i){var q=i.value.toLowerCase();var ds=i.parentNode.querySelectorAll(\'.gterm\');for(var k=0;k<ds.length;k++){var tx=ds[k].textContent.toLowerCase();ds[k].style.display=tx.indexOf(q)>-1?\'\':\'none\';}})(this)">'+body+'</div>';
+}
+function resourcesSection(pages, agentNm, dualJ, recommendHtml){
   const isSel=(p)=>!!(p&&(p.hub_type==='seller'||/seller_hub|listing_presentation|under_contract/.test(p.page_type||'')));
   const tag=(se)=>dualJ?`<span class="rtag ${se?'sel':'buy'}">${se?'Seller':'Buyer'}</span>`:'';
   const edge=(se)=>dualJ?`border-left:3px solid ${se?'#b08d57':'#335143'};`:'';
-  const docs=[]; for(const p of pages){((p.content||{}).documents||[]).forEach(d=>{if(d&&d.name)docs.push({name:d.name,type:d.type||'',url:d.url||'',from:labelOf(p),seller:isSel(p)});});}
+  const docs=[]; for(const p of pages){((p.content||{}).documents||[]).forEach(d=>{if(d&&d.name)docs.push({name:d.name,type:d.type||'',url:d.url||'',note:d.note||'',from:labelOf(p),seller:isSel(p)});});}
   const guides=pages.filter(p=>p.page_type==='custom'&&!(p.content&&p.content.hidden));
   let hubSecs=''; for(const p of pages){ if(p.page_type==='custom')continue; const secs=((p.content||{}).sections||[]).filter(x=>x&&x.enabled!==false); if(secs.length) hubSecs+=secs.map((x,i)=>renderClientSec(x,i,p.content||{})).join(''); }
   let h=`<div data-sec="resources" hidden><h1>Resources</h1><p class="sub">Documents, guides, and helpful materials from ${esc(agentNm||'your agent')}.</p>`;
   if(dualJ) h+=`<div class="rlegend"><span class="rtag buy">Buyer</span> for your home search &nbsp;·&nbsp; <span class="rtag sel">Seller</span> for your sale</div>`;
   let any=false;
   if(guides.length){ any=true; h+=`<div style="margin-top:16px"><span class="klabel">Guides &amp; materials</span>`+guides.map(g=>{const se=isSel(g);return `<div class="card ovlink" data-go="p-${esc(slugOf(g))}" style="margin-top:10px;${edge(se)}">${tag(se)}<div style="font-weight:700">${esc(labelOf(g))}</div><div class="why" style="margin-top:2px">Tap to open →</div></div>`;}).join('')+`</div>`; }
-  if(docs.length){ any=true; h+=`<div style="margin-top:18px"><span class="klabel">Documents</span>`+docs.map(d=>{const u=(d.url&&/^(https?:|blob:)/i.test(d.url))?d.url:'';return `<div class="card" style="margin-top:10px;${edge(d.seller)}"><div class="row" style="align-items:center;gap:12px"><div style="min-width:0">${tag(d.seller)}<div style="font-weight:700">${esc(d.name)}</div>`+((d.type||d.from)?`<div style="color:var(--muted);font-size:13px">${esc([d.type,d.from].filter(Boolean).join(' · '))}</div>`:'')+`</div>`+(u?`<a class="btn small ghost" href="${esc(u)}" target="_blank" rel="noreferrer">Open</a>`:`<span style="color:var(--muted);font-size:13px">Shared by your agent</span>`)+`</div></div>`;}).join('')+`</div>`; }
+  if(docs.length){ any=true; h+=`<div style="margin-top:18px"><span class="klabel">Documents</span>`+docs.map(d=>{const u=(d.url&&/^(https?:|blob:)/i.test(d.url))?d.url:'';return `<div class="card" style="margin-top:10px;${edge(d.seller)}"><div class="row" style="align-items:center;gap:12px"><div style="min-width:0">${tag(d.seller)}<div style="font-weight:700">${esc(d.name)}</div>`+((d.type||d.from)?`<div style="color:var(--muted);font-size:13px">${esc([d.type,d.from].filter(Boolean).join(' · '))}</div>`:'')+`</div>`+(u?`<a class="btn small ghost" href="${esc(u)}" target="_blank" rel="noreferrer">Open</a>`:`<span style="color:var(--muted);font-size:13px">Shared by your agent</span>`)+`</div>`+(d.note?`<div class="docnote">${esc(d.note)}</div>`:'')+`</div>`;}).join('')+`</div>`; }
   if(hubSecs){ any=true; h+=`<div style="margin-top:18px">`+hubSecs+`</div>`; }
+  const gloss=glossaryBlock(pages,dualJ); if(gloss){ any=true; h+=gloss; }
+  if(recommendHtml){ any=true; h+=recommendHtml; }
   if(!any) h+=`<p class="sub" style="margin-top:12px">Your agent hasn’t added resources yet.</p>`;
   return h+`</div>`;
 }
@@ -1420,7 +1479,121 @@ function commuteScript(commute, fav, cid){
     el.innerHTML='<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'+miss;}
   })();</script>`;
 }
-function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient, myUid, commute){
+function recommendBlock(agent, brand, agentNm, clientName){
+  agent=agent||{}; brand=brand||{};
+  var name=agentNm||agent.name||'your agent';
+  var first=(name.split(' ')[0]||name);
+  var email=((agent.email||'').trim())||((brand.email)||'');
+  var phoneRaw=((agent.phone||'').trim())||((brand.phone)||'');
+  var tel=(phoneRaw||'').replace(/\D/g,''); var telN=tel.length===10?'+1'+tel:(tel.length===11&&tel[0]==='1'?'+'+tel:(tel?'+'+tel:''));
+  var web=((agent.website||brand.website||'')+'').trim();
+  var webUrl=web?(/^https?:/i.test(web)?web:'https://'+web):'';
+  var webShow=web.replace(/^https?:\/\//i,'').replace(/\/$/,'');
+  var head=(brand.headshotUrl||brand.photo||'')+'';
+  var biz=(agent.business||brand.business||'Jade Real Estate');
+  var ig=((brand.instagram||'')+'').replace(/^@/,'');
+  if(!(email||telN||webUrl)) return '';
+  var share=JSON.stringify({name:name,biz:biz,email:email,phone:phoneRaw,tel:telN,web:webUrl,webShow:webShow,head:head,ig:ig,first:first});
+  var msg='I had a great experience working with '+name+(biz?' at '+biz:'')+'. If you\u2019re thinking about buying or selling, reach out'+(phoneRaw?' \u2014 '+phoneRaw:'')+(email?' \u2014 '+email:'')+'.';
+  var h='<div class="card reccard" style="margin-top:18px" id="recWrap">';
+  h+='<span class="klabel">Loving working with '+esc(first)+'?</span>';
+  h+='<p class="why" style="margin:4px 0 2px">Pass '+esc(first)+'\u2019s name along \u2014 share a ready-made post for your story, text a friend, or copy a quick intro.</p>';
+  h+='<div class="recbtns"><button type="button" class="btn small" id="recDown">Save a story graphic</button><button type="button" class="btn small ghost" id="recShare">Text a friend</button><button type="button" class="btn small ghost" id="recCopy">Copy intro</button></div>';
+  h+='<span class="status" id="recStatus"></span>';
+  h+='</div>';
+  h+='<script>(function(){\n'
+  +'var W=document.getElementById("recWrap");if(!W)return;var D='+share+';\n'
+  +'var MSG='+JSON.stringify(msg)+';\n'
+  +'function flashR(t){var s=document.getElementById("recStatus");if(s){s.textContent=t;clearTimeout(s._t);s._t=setTimeout(function(){s.textContent="";},2600);}}\n'
+  +'var copy=document.getElementById("recCopy");if(copy)copy.addEventListener("click",function(){var t=MSG+(D.web?" "+D.web:"");if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){flashR("Copied \\u2713");},function(){flashR("Copy failed");});}else{flashR("Copy not supported");}});\n'
+  +'var sh=document.getElementById("recShare");if(sh)sh.addEventListener("click",function(){var t=MSG+(D.web?" "+D.web:"");if(navigator.share){navigator.share({title:D.name,text:t}).catch(function(){});}else{location.href="sms:?&body="+encodeURIComponent(t);}});\n'
+  +'function drawStory(cb){var c=document.createElement("canvas");c.width=1080;c.height=1920;var x=c.getContext("2d");\n'
+  +'var g=x.createLinearGradient(0,0,0,1920);g.addColorStop(0,"#15201a");g.addColorStop(1,"#335143");x.fillStyle=g;x.fillRect(0,0,1080,1920);\n'
+  +'x.fillStyle="rgba(166,182,164,0.18)";x.fillRect(90,150,900,2);x.fillRect(90,1760,900,2);\n'
+  +'x.textAlign="center";\n'
+  +'function body(){x.fillStyle="#f2efeb";x.font="italic 60px Georgia, serif";x.fillText("Buying or selling in",540,900);x.fillText("Colorado?",540,975);\n'
+  +'x.fillStyle="#a6b6a4";x.font="600 40px system-ui,Arial,sans-serif";x.fillText("Let\\u2019s talk \\u2014 I\\u2019d love to help.",540,1060);\n'
+  +'x.fillStyle="#f2efeb";x.font="700 70px Georgia, serif";x.fillText(D.name||"",540,1260);\n'
+  +'x.fillStyle="#a6b6a4";x.font="500 36px system-ui,Arial,sans-serif";x.fillText(D.biz||"Jade Real Estate",540,1320);\n'
+  +'x.fillStyle="#f2efeb";x.font="400 38px system-ui,Arial,sans-serif";var ly=1440;if(D.phone){x.fillText(D.phone,540,ly);ly+=58;}if(D.email){x.fillText(D.email,540,ly);ly+=58;}if(D.webShow){x.fillText(D.webShow,540,ly);ly+=58;}if(D.ig){x.fillStyle="#a6b6a4";x.fillText("@"+D.ig,540,ly);}\n'
+  +'x.fillStyle="#a6b6a4";x.font="italic 44px Georgia, serif";x.fillText("Jade Real Estate",540,1700);\n'
+  +'cb(c);}\n'
+  +'if(D.head){var img=new Image();img.crossOrigin="anonymous";img.onload=function(){try{x.save();x.beginPath();x.arc(540,470,180,0,Math.PI*2);x.closePath();x.clip();var r=Math.max(360/img.width,360/img.height);var w=img.width*r,hh=img.height*r;x.drawImage(img,540-w/2,470-hh/2,w,hh);x.restore();x.strokeStyle="#a6b6a4";x.lineWidth=5;x.beginPath();x.arc(540,470,180,0,Math.PI*2);x.stroke();}catch(e){}body();};img.onerror=function(){x.fillStyle="#335143";x.beginPath();x.arc(540,470,180,0,Math.PI*2);x.fill();x.fillStyle="#f2efeb";x.font="700 140px Georgia,serif";x.fillText((D.first||"J").charAt(0).toUpperCase(),540,520);body();};img.src=D.head;}else{x.fillStyle="#2a4435";x.beginPath();x.arc(540,470,180,0,Math.PI*2);x.fill();x.fillStyle="#f2efeb";x.font="700 140px Georgia,serif";x.fillText((D.first||"J").charAt(0).toUpperCase(),540,520);body();}}\n'
+  +'var dn=document.getElementById("recDown");if(dn)dn.addEventListener("click",function(){flashR("Building your graphic\\u2026");drawStory(function(c){setTimeout(function(){try{c.toBlob(function(b){if(!b){flashR("Could not create image");return;}var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download="recommend-"+((D.first||"agent").toLowerCase())+".png";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);flashR("Saved \\u2713 \\u2014 post it to your story");},"image/png");}catch(e){flashR("Could not create image");}},120);});});\n'
+  +'})();<\/script>';
+  return h;
+}
+function calcSection(calc, homes){
+  var A=Object.assign({downPct:20,rate:6.5,termYears:30,taxPct:0.55,insMo:90,hoaMo:0,incomeYr:'',debtsMo:'',dti:40},(calc)||{});
+  function ai(id,label,val,sfx){ return '<label class="f" style="flex:1;min-width:110px">'+label+'<div style="display:flex;align-items:center;gap:4px"><input class="cain" id="'+id+'" inputmode="decimal" value="'+esc(val==null?'':val)+'">'+(sfx?'<span class="why">'+sfx+'</span>':'')+'</div></label>'; }
+  var assume='<div class="card" style="margin-top:16px"><span class="klabel">Your assumptions</span><p class="why" style="margin:4px 0 8px">Set these once — every calculator uses them, and they’re saved for next time.</p>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    +ai('caDown','Down payment',A.downPct,'%')
+    +ai('caRate','Interest rate',A.rate,'%')
+    +ai('caTerm','Loan term',A.termYears,'yrs')
+    +ai('caTax','Property tax',A.taxPct,'%/yr')
+    +ai('caIns','Insurance',A.insMo,'$/mo')
+    +ai('caHoa','HOA dues',A.hoaMo,'$/mo')
+    +'</div><span class="status" id="caStatus"></span></div>';
+  var tabs='<div class="ctabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px">'
+    +'<button type="button" class="btn small ctb on" data-ct="compare">Compare homes</button>'
+    +'<button type="button" class="btn small ghost ctb" data-ct="payment">Monthly payment</button>'
+    +'<button type="button" class="btn small ghost ctb" data-ct="afford">What can I afford</button>'
+    +'<button type="button" class="btn small ghost ctb" data-ct="closing">Closing costs</button></div>';
+  var compare='<div class="cpanel" data-cp="compare" style="margin-top:14px"><div class="card" style="overflow-x:auto"><div id="cmpRows"></div></div><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn small ghost" id="cmpAdd">+ Add a home</button><button type="button" class="btn small ghost" id="cmpFav">Use my saved favorites</button></div></div>';
+  var payment='<div class="cpanel" data-cp="payment" hidden style="margin-top:14px"><div class="card"><label class="f">Home price<input class="cain" id="pmPrice" inputmode="decimal" placeholder="$625,000"></label><div id="pmOut" style="margin-top:12px"></div></div></div>';
+  var afford='<div class="cpanel" data-cp="afford" hidden style="margin-top:14px"><div class="card"><div style="display:flex;gap:10px;flex-wrap:wrap"><label class="f" style="flex:1;min-width:120px">Annual household income<input class="cain" id="afIncome" inputmode="decimal" placeholder="$120,000"></label><label class="f" style="flex:1;min-width:120px">Monthly debts<input class="cain" id="afDebts" inputmode="decimal" placeholder="Car, loans, cards"></label><label class="f" style="flex:1;min-width:90px">Comfort level<select class="cain" id="afDti"><option value="36">Conservative</option><option value="43" selected>Comfortable</option><option value="50">Aggressive</option></select></label></div><div id="afOut" style="margin-top:12px"></div><p class="why" style="margin-top:8px">A planning estimate — your lender’s approval depends on credit, the full application, and loan program.</p></div></div>';
+  var closing='<div class="cpanel" data-cp="closing" hidden style="margin-top:14px"><div class="card"><label class="f">Home price<input class="cain" id="clPrice" inputmode="decimal" placeholder="$625,000"></label><div id="clOut" style="margin-top:12px"></div><p class="why" style="margin-top:8px">A rough range for a buyer — actual costs vary by lender, title company, and loan. Your lender’s Loan Estimate is the real number.</p></div></div>';
+  return '<div data-sec="calc" hidden><h1>Calculators</h1><p class="sub">Run the numbers on the homes you’re weighing — monthly payment, what you can afford, and cash to close.</p>'
+    +assume+tabs+compare+payment+afford+closing
+    +'<p class="why" style="margin-top:12px">Estimates only, not a loan offer or financial advice. Talk to your lender for exact figures.</p></div>';
+}
+function calcScript(calc, homes, cid){
+  var A=Object.assign({downPct:20,rate:6.5,termYears:30,taxPct:0.55,insMo:90,hoaMo:0},(calc)||{});
+  return `<script>(function(){
+  var SB=${JSON.stringify(SB)},ANON=${JSON.stringify(ANON)},CID=${JSON.stringify(cid)};
+  var A=${JSON.stringify(A)};
+  var HOMES=${JSON.stringify(homes)};
+  function tok(){var m=(document.cookie||'').match(/(?:^|; )sb_at=([^;]*)/);return m?decodeURIComponent(m[1]):'';}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function num(x){if(x==null)return 0;var n=parseFloat(String(x).replace(/[^0-9.\-]/g,''));return isFinite(n)?n:0;}
+  function fmt(n){if(!isFinite(n))return '—';return '$'+Math.round(n).toLocaleString();}
+  function uid(){return Math.random().toString(36).slice(2,9);}
+  var ROWS=(HOMES||[]).map(function(h){return {id:uid(),address:h.address||'',price:num(h.price),sqft:num(h.sqft),beds:h.beds||'',baths:h.baths||''};});
+  function readAssume(){A.downPct=num(gv('caDown'))||0;A.rate=num(gv('caRate'))||0;A.termYears=num(gv('caTerm'))||30;A.taxPct=num(gv('caTax'))||0;A.insMo=num(gv('caIns'))||0;A.hoaMo=num(gv('caHoa'))||0;}
+  function gv(id){var e=document.getElementById(id);return e?e.value:'';}
+  function monthlyPI(loan,ratePct,years){var r=ratePct/100/12,n=years*12;if(r<=0)return n?loan/n:0;return loan*r/(1-Math.pow(1+r,-n));}
+  function pmiMo(loan,downPct){return downPct<20?loan*0.005/12:0;}
+  function payment(price){var down=price*A.downPct/100,loan=price-down;var pi=monthlyPI(loan,A.rate,A.termYears);var tax=price*A.taxPct/100/12;var ins=A.insMo;var hoa=A.hoaMo;var pmi=pmiMo(loan,A.downPct);return {down:down,loan:loan,pi:pi,tax:tax,ins:ins,hoa:hoa,pmi:pmi,total:pi+tax+ins+hoa+pmi};}
+  var saveT=null;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){var body={client_id:CID,assumptions:{downPct:A.downPct,rate:A.rate,termYears:A.termYears,taxPct:A.taxPct,insMo:A.insMo,hoaMo:A.hoaMo},updated_at:new Date().toISOString()};fetch(SB+'/rest/v1/client_calc?on_conflict=client_id',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(tok()||ANON),'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)}).then(function(){var st=document.getElementById('caStatus');if(st){st.textContent='Saved ✓';clearTimeout(st._t);st._t=setTimeout(function(){st.textContent='';},1800);}}).catch(function(){});},700);}
+  function renderCompare(){var el=document.getElementById('cmpRows');if(!el)return;if(!ROWS.length){el.innerHTML='<p class="why" style="padding:4px">Add a home, or pull in your saved favorites, to compare monthly costs side by side.</p>';return;}
+    var head='<tr><th style="text-align:left;padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Home</th><th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Price</th><th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">$/sqft</th><th style="padding:6px 8px;font-size:11px;text-transform:uppercase;color:var(--muted)">Est. monthly</th><th></th></tr>';
+    var rows=ROWS.map(function(r){var pay=payment(r.price);var ppsf=(r.price&&r.sqft)?('$'+Math.round(r.price/r.sqft)):'—';return '<tr style="border-top:1px solid var(--line)"><td style="padding:8px;min-width:150px"><div style="font-weight:600;font-size:13px">'+esc(r.address||'Home')+'</div>'+((r.beds||r.baths)?'<div class="why">'+esc(r.beds)+' bd · '+esc(r.baths)+' ba</div>':'')+'</td><td style="padding:8px"><input class="cain cmpP" data-id="'+r.id+'" inputmode="decimal" value="'+(r.price?Math.round(r.price):'')+'" style="width:95px"></td><td style="padding:8px;text-align:center;font-size:13px">'+ppsf+'</td><td style="padding:8px;text-align:center;font-weight:700;color:var(--jade)">'+fmt(pay.total)+'/mo</td><td style="padding:8px"><button type="button" class="cmdel" data-cdel="'+r.id+'">✕</button></td></tr>';}).join('');
+    el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:14px"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>';}
+  function renderPayment(){var out=document.getElementById('pmOut');if(!out)return;var price=num(gv('pmPrice'));if(!price){out.innerHTML='<p class="why">Enter a price to see the full monthly breakdown.</p>';return;}var p=payment(price);function row(l,v,b){return '<div class="row" style="padding:5px 0'+(b?';border-top:1px solid var(--line);margin-top:4px;font-weight:700':'')+'"><span'+(b?'':' class="why"')+'>'+l+'</span><span'+(b?' style="font-weight:700"':'')+'>'+v+'</span></div>';}
+    out.innerHTML=row('Principal & interest',fmt(p.pi))+row('Property tax',fmt(p.tax))+row('Home insurance',fmt(p.ins))+(p.hoa?row('HOA dues',fmt(p.hoa)):'')+(p.pmi?row('PMI',fmt(p.pmi)):'')+row('Total monthly',fmt(p.total)+'/mo',true)+'<p class="why" style="margin-top:8px">'+fmt(p.down)+' down ('+A.downPct+'%) · '+fmt(p.loan)+' loan at '+A.rate+'% over '+A.termYears+' yrs.</p>';}
+  function renderAfford(){var out=document.getElementById('afOut');if(!out)return;var inc=num(gv('afIncome')),debts=num(gv('afDebts')),dti=num(gv('afDti'))||43;if(!inc){out.innerHTML='<p class="why">Enter your income to see an estimated price range.</p>';return;}
+    var maxPITI=inc/12*dti/100-debts;if(maxPITI<=0){out.innerHTML='<p class="why">With these debts, there’s no room in the budget at this comfort level — try lowering debts or a higher level.</p>';return;}
+    var lo=0,hi=5000000;for(var i=0;i<40;i++){var mid=(lo+hi)/2;if(payment(mid).total>maxPITI)hi=mid;else lo=mid;}
+    var price=lo;var p=payment(price);
+    out.innerHTML='<div style="text-align:center;padding:6px 0"><div class="why">Estimated comfortable price</div><div style="font-size:30px;font-weight:800;color:var(--jade)">'+fmt(price)+'</div></div><div class="row" style="padding:4px 0"><span class="why">Est. monthly payment</span><span>'+fmt(p.total)+'/mo</span></div><div class="row" style="padding:4px 0"><span class="why">Down payment ('+A.downPct+'%)</span><span>'+fmt(p.down)+'</span></div><div class="row" style="padding:4px 0"><span class="why">Loan amount</span><span>'+fmt(p.loan)+'</span></div>';}
+  function renderClosing(){var out=document.getElementById('clOut');if(!out)return;var price=num(gv('clPrice'));if(!price){out.innerHTML='<p class="why">Enter a price to estimate your cash to close.</p>';return;}
+    var down=price*A.downPct/100,loan=price-down;var lender=loan*0.01,title=price*0.005,govt=price*0.0015,prepaid=price*A.taxPct/100/12*3+A.insMo*12;var closeLo=lender+title+govt+prepaid*0.8,closeHi=(lender+title+govt+prepaid)*1.25;
+    function row(l,v,b){return '<div class="row" style="padding:5px 0'+(b?';border-top:1px solid var(--line);margin-top:4px':'')+'"><span'+(b?' style="font-weight:700"':' class="why"')+'>'+l+'</span><span'+(b?' style="font-weight:700"':'')+'>'+v+'</span></div>';}
+    out.innerHTML=row('Down payment ('+A.downPct+'%)',fmt(down))+row('Est. closing costs',fmt(closeLo)+' – '+fmt(closeHi))+row('Est. cash to close',fmt(down+closeLo)+' – '+fmt(down+closeHi),true)+'<p class="why" style="margin-top:8px">Closing costs cover lender fees, title & settlement, recording, and prepaid taxes/insurance — typically 2–3% of the price for buyers.</p>';}
+  function renderAll(){renderCompare();renderPayment();renderAfford();renderClosing();}
+  document.addEventListener('input',function(e){var t=e.target;if(!t.classList)return;if(t.classList.contains('cain')){var id=t.id||'';if(id==='caDown'||id==='caRate'||id==='caTerm'||id==='caTax'||id==='caIns'||id==='caHoa'){readAssume();save();renderAll();return;}if(t.classList.contains('cmpP')){var rid=t.getAttribute('data-id');for(var i=0;i<ROWS.length;i++)if(ROWS[i].id===rid)ROWS[i].price=num(t.value);renderCompare();return;}if(id==='pmPrice'){renderPayment();return;}if(id==='afIncome'||id==='afDebts'){renderAfford();return;}if(id==='clPrice'){renderClosing();return;}}});
+  document.addEventListener('change',function(e){var t=e.target;if(t&&t.id==='afDti')renderAfford();});
+  document.addEventListener('click',function(e){var t=e.target;if(!t.getAttribute)return;
+    var ct=t.getAttribute('data-ct');if(ct){var tabs=document.querySelectorAll('.ctb');for(var i=0;i<tabs.length;i++){var on=tabs[i].getAttribute('data-ct')===ct;tabs[i].classList.toggle('on',on);tabs[i].classList.toggle('ghost',!on);}var ps=document.querySelectorAll('.cpanel');for(var j=0;j<ps.length;j++)ps[j].hidden=ps[j].getAttribute('data-cp')!==ct;return;}
+    if(t.id==='cmpAdd'){ROWS.push({id:uid(),address:'New home',price:0,sqft:0,beds:'',baths:''});renderCompare();return;}
+    if(t.id==='cmpFav'){ (HOMES||[]).forEach(function(h){var a=(h.address||'');if(a&&!ROWS.some(function(r){return (r.address||'').toLowerCase()===a.toLowerCase();}))ROWS.push({id:uid(),address:a,price:num(h.price),sqft:num(h.sqft),beds:h.beds||'',baths:h.baths||''});});renderCompare();return;}
+    var cd=t.getAttribute('data-cdel');if(cd){ROWS=ROWS.filter(function(r){return r.id!==cd;});renderCompare();return;}});
+  renderAll();
+  })();<\/script>`;
+}
+function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient, myUid, commute, calc){
   brand = brand || {};
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
   const _brandName = brand.business || brand.displayName || brand.fullName || '';
@@ -1452,6 +1625,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   let tabs=`<button class="tab" data-tab="today" data-journey="both">Today</button>`;
   if(hasBuyJ)tabs+=`<button class="tab" data-tab="homestours" data-journey="buy">Homes &amp; Tours</button>`;
   if(hasBuyJ&&commute&&commute.published)tabs+=`<button class="tab" data-tab="commute" data-journey="buy">Commute</button>`;
+  if(hasBuyJ)tabs+=`<button class="tab" data-tab="calc" data-journey="buy">Calculators</button>`;
   if(hasSellJ)tabs+=`<button class="tab" data-tab="listing" data-journey="sell">Your listing</button>`;
   tabs+=`<button class="tab" data-tab="roadmap" data-journey="both">Roadmap</button>`;
   tabs+=`<button class="tab" data-tab="resources" data-journey="both">Resources</button>`;
@@ -1465,13 +1639,16 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   body+=todaySection(pages,clientName,stage,lender,agentForUi,brand&&brand.headshotUrl,initJ);
   if(hasBuyJ)body+=homesToursSection(pages,clientSlug,fb,allHomes);
   if(hasBuyJ&&commute&&commute.published)body+=commuteSection(commute);
+  if(hasBuyJ)body+=calcSection(calc,allHomes);
   if(hasSellJ)body+=listingSection(sc,pages);
   body+=roadmapSection(pages,stage,initJ,seller);
-  body+=resourcesSection(pages,agentNm,dualJ);
+  const recHtml=recommendBlock(agentForUi,brand,agentNm,clientName);
+  body+=resourcesSection(pages,agentNm,dualJ,recHtml);
   for(const p of visiblePages)if(p.page_type==='custom')body+=pageSection(p);
   body+=messagesSection(agent.name);
   body+=settingsSection(vis,myEmail);
   if(hasBuyJ&&commute&&commute.published)body+=commuteScript(commute,(allHomes||[]).map(h=>h.address).filter(Boolean),cid);
+  if(hasBuyJ)body+=calcScript(calc,(allHomes||[]).map(function(h){return {address:h.address||'',price:h.price||'',sqft:h.sqft||'',beds:h.beds||'',baths:h.baths||''};}),cid);
   const cEmail=((agent.email||'').trim())||((brand&&brand.email)||'');
   const cPhoneRaw=((agent.phone||'').trim())||((brand&&brand.phone)||'');
   const cTel=(cPhoneRaw||'').replace(/\D/g,''); const cT=cTel.length===10?'+1'+cTel:(cTel.length===11&&cTel[0]==='1'?'+'+cTel:'+'+cTel);
@@ -1560,6 +1737,7 @@ setInterval(loadChat,20000);
 }
 
 async function fetchCommute(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_commute?select=places,homes,published&client_id=eq.${cid}&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return (Array.isArray(rows)&&rows[0])||null; }catch(e){ return null; } }
+async function fetchCalc(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_calc?select=assumptions&client_id=eq.${cid}&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return (Array.isArray(rows)&&rows[0]&&rows[0].assumptions)||null; }catch(e){ return null; } }
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
 async function fetchPrefs(cid, email, token){ try{ const r=await fetch(`${SB}/rest/v1/client_prefs?select=prefs&client_id=eq.${cid}&email=eq.${encodeURIComponent(email)}`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); const pr=(Array.isArray(rows)&&rows[0]&&rows[0].prefs)||{}; return pr.visibility||'shared'; }catch(e){ return 'shared'; } }
 async function fetchMsgs(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_messages?select=from_name,from_role,body,created_at&client_id=eq.${cid}&order=created_at.asc`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }catch(e){ return []; } }
@@ -1934,10 +2112,10 @@ export default {
       const cid=(pages[0]&&pages[0].client_id)||'';
       const em=((_user&&_user.email)||'').toLowerCase();
       const meName=(_user&&_user.user_metadata&&(_user.user_metadata.full_name||_user.user_metadata.name))||(em?em.split('@')[0].replace(/^./,c=>c.toUpperCase()):'You');
-      const [fb,vis,msgs,commute]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok),fetchCommute(cid,_tok)]);
+      const [fb,vis,msgs,commute,calc]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok),fetchCommute(cid,_tok),fetchCalc(cid,_tok)]);
       const _agb=await fetchAgentCard((pages[0]&&pages[0].agent_id)||'');
       const _brand=Object.assign({},(_agb&&_agb.brand)||{}); if(_agb&&_agb.name&&!_brand.fullName)_brand.fullName=_agb.name;
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient,(_user&&_user.id)||'',commute);
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient,(_user&&_user.id)||'',commute,calc);
     }catch(e){ return notFound(); }
   },
 };
