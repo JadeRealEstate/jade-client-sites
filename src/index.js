@@ -1593,7 +1593,65 @@ function calcScript(calc, homes, cid){
   renderAll();
   })();<\/script>`;
 }
-function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient, myUid, commute, calc){
+function capexSection(capex, sc){
+  var A=Object.assign({salePrice:'',payoff:'',commPct:5.5,costPct:1,purchasePrice:''},(capex&&capex.assumptions)||{});
+  if((A.salePrice===''||A.salePrice==null)&&sc&&sc.listing&&sc.listing.price){A.salePrice=String(sc.listing.price).replace(/[^0-9.]/g,'');}
+  function ai(id,label,val,sfx,ph){ return '<label class="f" style="flex:1;min-width:150px">'+label+'<div style="display:flex;align-items:center;gap:5px"><input class="cain" id="'+id+'" inputmode="decimal" value="'+esc(val==null?'':val)+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'>'+(sfx?'<span class="why">'+sfx+'</span>':'')+'</div></label>'; }
+  var assume='<div class="card" style="margin-top:16px"><span class="klabel">The numbers</span><p class="why" style="margin:4px 0 8px">Set these once — everything below updates, and it is saved for next time.</p>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    +ai('cxSale','Estimated sale price',A.salePrice,'','$650,000')
+    +ai('cxPayoff','Mortgage payoff',A.payoff,'','$0')
+    +ai('cxComm','Commission',A.commPct,'%')
+    +ai('cxCost','Other seller costs',A.costPct,'% of price')
+    +ai('cxBuy','What you paid (optional)',A.purchasePrice,'','for cost basis')
+    +'</div><span class="status" id="cxStatus"></span></div>';
+  var improve='<div class="card" style="margin-top:14px"><span class="klabel">Improvements you have made</span><p class="why" style="margin:4px 0 10px">Capital improvements — a new roof, kitchen, HVAC, an addition. They help justify your price, and may raise your cost basis at tax time.</p><div id="cxItems"></div><button type="button" class="btn small ghost" id="cxAdd" style="margin-top:6px">+ Add an improvement</button></div>';
+  var net='<div class="card" style="margin-top:14px"><span class="klabel">Your estimated net</span><div id="cxNet" style="margin-top:8px"></div></div>';
+  return '<div data-sec="capex" hidden><h1>Net sheet</h1><p class="sub">What you have put into the home, and an estimate of what you will walk away with at closing.</p>'
+    +assume+improve+net
+    +'<p class="why" style="margin-top:12px">Estimates only — not tax or financial advice. Your closing statement and a tax professional are the real numbers.</p></div>';
+}
+function capexScript(capex, sc, cid){
+  var A=Object.assign({salePrice:'',payoff:'',commPct:5.5,costPct:1,purchasePrice:''},(capex&&capex.assumptions)||{});
+  if((A.salePrice===''||A.salePrice==null)&&sc&&sc.listing&&sc.listing.price){A.salePrice=String(sc.listing.price).replace(/[^0-9.]/g,'');}
+  var ITEMS=(capex&&Array.isArray(capex.items)&&capex.items.length)?capex.items:[{d:'',cost:'',year:''}];
+  return `<script>(function(){
+  var SB=${JSON.stringify(SB)},ANON=${JSON.stringify(ANON)},CID=${JSON.stringify(cid)};
+  var A=${JSON.stringify(A)};
+  var ITEMS=(${JSON.stringify(ITEMS)}).map(function(x){return {id:Math.random().toString(36).slice(2,9),d:x.d||'',cost:x.cost||'',year:x.year||''};});
+  function tok(){var m=(document.cookie||'').match(/(?:^|; )sb_at=([^;]*)/);return m?decodeURIComponent(m[1]):'';}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function num(x){if(x==null)return 0;var n=parseFloat(String(x).replace(/[^0-9.]/g,''));return isFinite(n)?n:0;}
+  function fmt(n){if(!isFinite(n))return '-';return (n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString();}
+  function gv(id){var e=document.getElementById(id);return e?e.value:'';}
+  function readA(){A.salePrice=num(gv('cxSale'));A.payoff=num(gv('cxPayoff'));A.commPct=num(gv('cxComm'));A.costPct=num(gv('cxCost'));A.purchasePrice=num(gv('cxBuy'));}
+  function improvTotal(){var t=0;for(var i=0;i<ITEMS.length;i++)t+=num(ITEMS[i].cost);return t;}
+  var saveT=null;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){var body={client_id:CID,assumptions:{salePrice:num(A.salePrice),payoff:num(A.payoff),commPct:num(A.commPct),costPct:num(A.costPct),purchasePrice:num(A.purchasePrice)},items:ITEMS.map(function(x){return {d:x.d,cost:x.cost,year:x.year};}),updated_at:new Date().toISOString()};fetch(SB+'/rest/v1/client_capex?on_conflict=client_id',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(tok()||ANON),'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)}).then(function(){var st=document.getElementById('cxStatus');if(st){st.textContent='Saved ✓';clearTimeout(st._t);st._t=setTimeout(function(){st.textContent='';},1600);}}).catch(function(){});},700);}
+  function renderItems(){var el=document.getElementById('cxItems');if(!el)return;
+    var rows=ITEMS.map(function(it){return '<div class="row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">'
+      +'<input class="cain cxd" data-id="'+it.id+'" placeholder="e.g. New roof" value="'+esc(it.d)+'" style="flex:2;min-width:130px">'
+      +'<input class="cain cxc" data-id="'+it.id+'" inputmode="decimal" placeholder="Cost" value="'+esc(it.cost)+'" style="flex:1;min-width:85px">'
+      +'<input class="cain cxy" data-id="'+it.id+'" inputmode="numeric" placeholder="Year" value="'+esc(it.year)+'" style="width:70px">'
+      +'<button type="button" class="cmdel" data-cxdel="'+it.id+'">✕</button></div>';}).join('');
+    el.innerHTML=rows+'<div class="row" style="border-top:1px solid var(--line);padding-top:8px;font-weight:700"><span>Total invested</span><span id="cxTot">'+fmt(improvTotal())+'</span></div>';}
+  function renderNet(){var el=document.getElementById('cxNet');if(!el)return;readA();
+    var sale=num(A.salePrice),payoff=num(A.payoff),comm=sale*num(A.commPct)/100,costs=sale*num(A.costPct)/100,net=sale-payoff-comm-costs;
+    function row(l,v,b,neg){return '<div class="row" style="padding:5px 0'+(b?';border-top:1px solid var(--line);margin-top:4px':'')+'"><span'+(b?' style="font-weight:700"':' class="why"')+'>'+l+'</span><span'+(b?' style="font-weight:800;color:var(--jade)"':'')+'>'+(neg&&v?'− ':'')+fmt(v)+'</span></div>';}
+    var html=row('Sale price',sale)+row('Mortgage payoff',payoff,false,true)+row('Commission ('+num(A.commPct)+'%)',comm,false,true)+row('Other seller costs ('+num(A.costPct)+'%)',costs,false,true)+row('Estimated net proceeds',net,true);
+    var pp=num(A.purchasePrice);
+    if(pp){var basis=pp+improvTotal();var gain=sale-comm-costs-basis;html+='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px"><div class="row" style="padding:3px 0"><span class="why">Cost basis (paid + improvements)</span><span>'+fmt(basis)+'</span></div><div class="row" style="padding:3px 0"><span class="why">Estimated gain</span><span>'+fmt(gain)+'</span></div><p class="why" style="margin-top:6px">If this is your primary home, up to $250k of gain ($500k married filing jointly) may be excluded. Improvements raise your basis and can lower the taxable gain — keep your receipts. Not tax advice.</p></div>';}
+    el.innerHTML=html;}
+  document.addEventListener('input',function(e){var t=e.target;if(!t.classList)return;
+    if(t.id==='cxSale'||t.id==='cxPayoff'||t.id==='cxComm'||t.id==='cxCost'||t.id==='cxBuy'){readA();save();renderNet();return;}
+    if(t.classList.contains('cxd')||t.classList.contains('cxc')||t.classList.contains('cxy')){var id=t.getAttribute('data-id');for(var i=0;i<ITEMS.length;i++){if(ITEMS[i].id===id){if(t.classList.contains('cxd'))ITEMS[i].d=t.value;else if(t.classList.contains('cxc'))ITEMS[i].cost=t.value;else ITEMS[i].year=t.value;}}var tot=document.getElementById('cxTot');if(tot)tot.textContent=fmt(improvTotal());save();renderNet();return;}});
+  document.addEventListener('click',function(e){var t=e.target;if(!t.getAttribute)return;
+    if(t.id==='cxAdd'){ITEMS.push({id:Math.random().toString(36).slice(2,9),d:'',cost:'',year:''});renderItems();save();return;}
+    var del=t.getAttribute('data-cxdel');if(del){ITEMS=ITEMS.filter(function(x){return x.id!==del;});if(!ITEMS.length)ITEMS.push({id:Math.random().toString(36).slice(2,9),d:'',cost:'',year:''});renderItems();renderNet();save();return;}});
+  renderItems();renderNet();
+  })();</script>`;
+}
+function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manage, brand, rawManage, asClient, myUid, commute, calc, capex){
   brand = brand || {};
   const _logoUrl = (brand.logos && (brand.logos.horizontal || brand.logos.square || brand.logos.circle)) || brand.logoUrl || '';
   const _brandName = brand.business || brand.displayName || brand.fullName || '';
@@ -1627,6 +1685,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(hasBuyJ&&commute&&commute.published)tabs+=`<button class="tab" data-tab="commute" data-journey="buy">Commute</button>`;
   if(hasBuyJ)tabs+=`<button class="tab" data-tab="calc" data-journey="buy">Calculators</button>`;
   if(hasSellJ)tabs+=`<button class="tab" data-tab="listing" data-journey="sell">Your listing</button>`;
+  if(hasSellJ)tabs+=`<button class="tab" data-tab="capex" data-journey="sell">Net sheet</button>`;
   tabs+=`<button class="tab" data-tab="roadmap" data-journey="both">Roadmap</button>`;
   tabs+=`<button class="tab" data-tab="resources" data-journey="both">Resources</button>`;
   const navright=`<div class="navright"><button class="navlink" data-tab="messages">Contact ${_afirst}</button><button class="navicon" data-tab="settings" title="Account" aria-label="Account settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20.5a8 8 0 0 1 16 0"/></svg></button></div>`;
@@ -1641,6 +1700,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(hasBuyJ&&commute&&commute.published)body+=commuteSection(commute);
   if(hasBuyJ)body+=calcSection(calc,allHomes);
   if(hasSellJ)body+=listingSection(sc,pages);
+  if(hasSellJ)body+=capexSection(capex,sc);
   body+=roadmapSection(pages,stage,initJ,seller);
   const recHtml=recommendBlock(agentForUi,brand,agentNm,clientName);
   body+=resourcesSection(pages,agentNm,dualJ,recHtml);
@@ -1649,6 +1709,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   body+=settingsSection(vis,myEmail);
   if(hasBuyJ&&commute&&commute.published)body+=commuteScript(commute,(allHomes||[]).map(h=>h.address).filter(Boolean),cid);
   if(hasBuyJ)body+=calcScript(calc,(allHomes||[]).map(function(h){return {address:h.address||'',price:h.price||'',sqft:h.sqft||'',beds:h.beds||'',baths:h.baths||''};}),cid);
+  if(hasSellJ)body+=capexScript(capex,sc,cid);
   const cEmail=((agent.email||'').trim())||((brand&&brand.email)||'');
   const cPhoneRaw=((agent.phone||'').trim())||((brand&&brand.phone)||'');
   const cTel=(cPhoneRaw||'').replace(/\D/g,''); const cT=cTel.length===10?'+1'+cTel:(cTel.length===11&&cTel[0]==='1'?'+'+cTel:'+'+cTel);
@@ -1738,6 +1799,7 @@ setInterval(loadChat,20000);
 
 async function fetchCommute(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_commute?select=places,homes,published&client_id=eq.${cid}&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return (Array.isArray(rows)&&rows[0])||null; }catch(e){ return null; } }
 async function fetchCalc(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_calc?select=assumptions&client_id=eq.${cid}&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return (Array.isArray(rows)&&rows[0]&&rows[0].assumptions)||null; }catch(e){ return null; } }
+async function fetchCapex(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_capex?select=assumptions,items&client_id=eq.${cid}&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return (Array.isArray(rows)&&rows[0])||null; }catch(e){ return null; } }
 async function fetchHub(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/rpc/hub_feedback`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON),'Content-Type':'application/json'},body:JSON.stringify({p_client_id:cid})}); const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{ m[x.listing_id]={address:x.address,ratings:x.ratings||[]}; }); return m; }catch(e){ return {}; } }
 async function fetchPrefs(cid, email, token){ try{ const r=await fetch(`${SB}/rest/v1/client_prefs?select=prefs&client_id=eq.${cid}&email=eq.${encodeURIComponent(email)}`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); const pr=(Array.isArray(rows)&&rows[0]&&rows[0].prefs)||{}; return pr.visibility||'shared'; }catch(e){ return 'shared'; } }
 async function fetchMsgs(cid, token){ try{ const r=await fetch(`${SB}/rest/v1/client_messages?select=from_name,from_role,body,created_at&client_id=eq.${cid}&order=created_at.asc`,{headers:{apikey:ANON,Authorization:'Bearer '+(token||ANON)}}); const rows=await r.json(); return Array.isArray(rows)?rows:[]; }catch(e){ return []; } }
@@ -1872,6 +1934,7 @@ async function handleLanding(parts){
 function renderLanding(slug,page,ag){
   const d=page.data||{}; const g=d.guide||{}; const brand=ag.brand||{};
   const mode=(d.brandMode==='agent')?'agent':'jade';
+  const layout=['classic','editorial','split'].includes(d.layout)?d.layout:'classic';
   // palette
   const agentPrimary=/^#[0-9a-fA-F]{6}$/.test(brand.primaryColor||'')?brand.primaryColor:'#335143';
   const agentAccent=/^#[0-9a-fA-F]{6}$/.test(brand.accentColor||'')?brand.accentColor:agentPrimary;
@@ -2027,7 +2090,30 @@ button:disabled{opacity:.6}
 .nextstep{text-align:center}
 .nx{font-size:15px;font-weight:700;margin-bottom:10px}
 .nxbtn{display:inline-block;background:var(--btn);color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px}
-</style></head><body><div class="col">
+/* layout: editorial */
+.lay-editorial .col{max-width:600px}
+.lay-editorial .prof{text-align:left}
+.lay-editorial .av{margin:0 0 14px}
+.lay-editorial .logo{margin:0 0 14px}
+.lay-editorial h1{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:42px;line-height:1.03;margin-top:8px;letter-spacing:-.01em}
+.lay-editorial .ttl{margin-top:10px}
+.lay-editorial .tag{margin:14px 0 0;font-size:17px;max-width:34em}
+.lay-editorial .soc{justify-content:flex-start}
+.lay-editorial .card{border-radius:4px}
+.lay-editorial .gh{font-family:Georgia,'Times New Roman',serif;font-weight:700}
+.lay-editorial .sect{font-family:Georgia,serif;text-transform:none;letter-spacing:0;font-size:16px;opacity:.95}
+/* layout: split */
+.lay-split .rightcol{display:contents}
+@media(min-width:880px){
+ .lay-split .col{max-width:980px;display:grid;grid-template-columns:.92fr 1.08fr;gap:44px;align-items:start}
+ .lay-split .rightcol{display:block;grid-column:2;grid-row:1}
+ .lay-split .prof{grid-column:1;grid-row:1;position:sticky;top:40px;text-align:left}
+ .lay-split .prof .av,.lay-split .prof .logo{margin-left:0}
+ .lay-split .soc{justify-content:flex-start}
+ .lay-split .foot{grid-column:1 / -1}
+ .lay-split .card{margin-top:0}
+}
+</style></head><body class="lay-${layout}"><div class="col">
   <div class="prof">
     ${headImgs}
     <h1>${displayName}</h1>
@@ -2035,9 +2121,7 @@ button:disabled{opacity:.6}
     ${tagline?`<div class="tag">${tagline}</div>`:''}
     ${socHtml}
   </div>
-  ${captureCard}
-  ${sectionsHtml}
-  ${linkHtml?`<div class="links">${linkHtml}</div>`:''}
+  ${layout==='split'?`<div class="rightcol">${captureCard}${sectionsHtml}${linkHtml?`<div class="links">${linkHtml}</div>`:''}</div>`:`${captureCard}${sectionsHtml}${linkHtml?`<div class="links">${linkHtml}</div>`:''}`}
   <div class="foot"><span class="lg">Jade</span> · ${footer}</div>
 </div>
 ${(showForm&&!guideMode)?`<script>
@@ -2116,10 +2200,10 @@ export default {
       const cid=(pages[0]&&pages[0].client_id)||'';
       const em=((_user&&_user.email)||'').toLowerCase();
       const meName=(_user&&_user.user_metadata&&(_user.user_metadata.full_name||_user.user_metadata.name))||(em?em.split('@')[0].replace(/^./,c=>c.toUpperCase()):'You');
-      const [fb,vis,msgs,commute,calc]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok),fetchCommute(cid,_tok),fetchCalc(cid,_tok)]);
+      const [fb,vis,msgs,commute,calc,capex]=await Promise.all([fetchHub(cid,_tok),fetchPrefs(cid,em,_tok),fetchMsgs(cid,_tok),fetchCommute(cid,_tok),fetchCalc(cid,_tok),fetchCapex(cid,_tok)]);
       const _agb=await fetchAgentCard((pages[0]&&pages[0].agent_id)||'');
       const _brand=Object.assign({},(_agb&&_agb.brand)||{}); if(_agb&&_agb.name&&!_brand.fullName)_brand.fullName=_agb.name;
-      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient,(_user&&_user.id)||'',commute,calc);
+      return renderApp(pages,clientSlug,openTab,fb,meName,em,vis,msgs,canManage,_brand,_rawManage,_asClient,(_user&&_user.id)||'',commute,calc,capex);
     }catch(e){ return notFound(); }
   },
 };
