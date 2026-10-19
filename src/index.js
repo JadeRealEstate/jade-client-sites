@@ -2238,6 +2238,7 @@ function bookPage(slug) {
     + '.ag .ph{width:56px;height:56px;border-radius:50%;background:var(--jade);color:#fff;display:grid;place-items:center;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:24px}'
     + '.ag h1{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:22px;color:var(--jade);font-weight:400}'
     + '.ag p{font-size:13px;color:var(--muted)}'
+    + '.aglinks{margin:12px 0 2px;display:flex;flex-wrap:wrap;gap:8px}.aglinks a{font-size:12.5px;font-weight:600;color:#335143;border:1px solid #e3e7e0;border-radius:999px;padding:6px 13px;text-decoration:none}.aglinks a:hover{border-color:#335143}'
     + '.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);font-weight:700;margin-bottom:10px}'
     + '.mt{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px 16px;margin:8px 0;cursor:pointer;transition:.15s}'
     + '.mt:hover{border-color:var(--jade);box-shadow:0 1px 6px rgba(51,81,67,.08)}'
@@ -2289,7 +2290,7 @@ function bookScript() {
     ' function fmtDay(k){var p=k.split("-");var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2],12,0,0));return new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric"}).format(d);}',
     ' function fmtTime(iso){return new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ}).format(new Date(iso));}',
     ' function fmtFull(iso){return new Intl.DateTimeFormat("en-US",{weekday:"long",month:"long",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short",timeZone:TZ}).format(new Date(iso));}',
-    ' function head(){var a=META.agent||{};var img=a.photo?("<img src=\\""+esc(a.photo)+"\\" alt=\\"\\">"):("<div class=\\"ph\\">"+esc((a.name||"J").slice(0,1))+"</div>");return "<div class=\\"ag\\">"+img+"<div><h1>"+esc(a.name)+"</h1><p>"+esc(a.title||"")+(a.phone?(" · "+esc(a.phone)):"")+"</p></div></div>";}',
+    ' function head(){var a=META.agent||{};var img=a.photo?("<img src=\\""+esc(a.photo)+"\\" alt=\\"\\">"):("<div class=\\"ph\\">"+esc((a.name||"J").slice(0,1))+"</div>");var lk=(META.links||[]).filter(function(x){return x&&x.url&&x.label;}).map(function(x){return "<a href=\\""+esc(x.url)+"\\" target=\\"_blank\\" rel=\\"noopener\\">"+esc(x.label)+" ↗</a>";}).join("");var lkhtml=lk?("<div class=\\"aglinks\\">"+lk+"</div>"):"";return "<div class==\\"ag\\">"+img+"<div><h1>"+esc(a.name)+"</h1><p>"+esc(a.title||"")+(a.phone?(" · "+esc(a.phone)):"")+"</p></div></div>"+lkhtml;}',
     ' function showErr(m){var e=document.getElementById("err");if(e)e.textContent=m||"";}',
     ' function load(){',
     '   if(qs.get("cancel")) return renderCancel(qs.get("cancel"));',
