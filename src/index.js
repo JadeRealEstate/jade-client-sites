@@ -2294,7 +2294,7 @@ function bookScript() {
     '   if(qs.get("cancel")) return renderCancel(qs.get("cancel"));',
     '   fetch(APP+"/api/book?slug="+encodeURIComponent(SLUG)).then(function(r){return r.json();}).then(function(j){',
     '     if(!j||!j.ok){root.innerHTML="<div class=\\"card\\"><p class=\\"muted\\">"+esc((j&&j.error)||"This booking page is not available.")+"</p></div>";return;}',
-    '     META=j; renderTypes();',
+    '     META=j; try{if(META.agent&&/^#[0-9a-fA-F]{3,6}$/.test(META.agent.color||""))document.documentElement.style.setProperty("--jade",META.agent.color);}catch(e){} renderTypes();',
     '   }).catch(function(){root.innerHTML="<div class=\\"card\\"><p class=\\"muted\\">Could not load. Please try again.</p></div>";});',
     ' }',
     ' function renderTypes(){',
