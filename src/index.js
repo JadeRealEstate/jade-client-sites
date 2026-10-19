@@ -2224,6 +2224,7 @@ function bookPage(slug) {
   return '<!doctype html><html lang="en"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Book a time · Jade Real Estate</title>'
+    + '<link rel="icon" type="image/png" href="https://agentapp.jaderealestate.com/jade-favicon-32.png">'
     + '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@1&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">'
     + '<style>'
