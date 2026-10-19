@@ -1,4 +1,5 @@
 // Jade client sites (Cloudflare Worker) — per-client app: Today, published-page tabs,
+import { handleBook } from './book-page.js';
 // Tour (Love/Maybe/Pass + notes, per rater), ranked homes, Messages, Settings.
 /* ===== Questionnaire (inlined; single-file worker) ===== */
 // AUTO-GENERATED — Jade Standard questionnaire templates (buyer + seller).
@@ -2186,6 +2187,7 @@ export default {
     if(parts[0]==='q'){ return await handleQuestionnaire(parts); }
     if(parts[0]==='site'){ return await handlePortalSite(parts, request); }
     if(parts[0]==='g'){ return await handleLanding(parts); }
+    if(parts[0]==='book'){ return handleBook(parts); }
     if(parts.length===0){ if(env.ASSETS){try{const res=await env.ASSETS.fetch(request);if(res&&res.status!==404)return res;}catch(e){}} return notFound(); }
     const clientSlug=decodeURIComponent(parts[0]).toLowerCase();
     const _tok=getCookie(request,'sb_at'); const _user=_tok?await getUser(_tok):null;
