@@ -1870,6 +1870,81 @@ async function handleQuestionnaire(parts){
   return htmlResp(renderQuestionnairePage({agentId,type,schema,templateId,agentName,brand,sb:SB,anon:ANON}));
 }
 
+function formUnavailablePage(){
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Form unavailable</title><style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#f2efeb;color:#15201a;display:grid;place-items:center;min-height:100vh;margin:0}.b{text-align:center;padding:24px;max-width:420px}</style></head><body><div class="b"><h1 style="color:#335143">This form isn’t available</h1><p style="color:#546751">The link may be turned off or expired. Ask whoever shared it for an updated link.</p></div></body></html>`;
+}
+function renderFormPage(form, agentName, brand){
+  const fields=Array.isArray(form.fields)?form.fields:[];
+  const primary=/^#[0-9a-fA-F]{6}$/.test((brand&&brand.primaryColor)||'')?brand.primaryColor:'#335143';
+  const who=esc(agentName||(brand&&brand.displayName)||'Jade Real Estate');
+  const tE=(t)=>t==='email'?'email':t==='phone'?'tel':t==='number'?'number':t==='date'?'date':'text';
+  const fieldHtml=fields.map(f=>{
+    const id=esc(f.id); const lab=esc(f.label||'')+(f.required?' <span class="req">*</span>':'');
+    const opts=Array.isArray(f.options)?f.options:[];
+    let ctl='';
+    if(f.type==='textarea') ctl=`<textarea class="in" id="${id}" name="${id}" rows="3"></textarea>`;
+    else if(f.type==='select') ctl=`<select class="in" id="${id}" name="${id}"><option value="">Choose…</option>${opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`;
+    else if(f.type==='radio'||f.type==='checkbox') ctl=`<div class="opts">${opts.map(o=>`<label class="opt"><input type="${f.type}" name="${id}" value="${esc(o)}"> ${esc(o)}</label>`).join('')}</div>`;
+    else ctl=`<input class="in" id="${id}" name="${id}" type="${tE(f.type)}">`;
+    return `<div class="fld"><label class="f" for="${id}">${lab}</label>${ctl}</div>`;
+  }).join('');
+  const meta=fields.map(f=>({id:f.id,type:f.type,required:!!f.required,maps:f.maps||''}));
+  const submitJs="(function(){var form=document.getElementById('jf'),btn=document.getElementById('sb'),err=document.getElementById('err'),done=document.getElementById('done');function val(f){if(f.type==='checkbox'){return Array.prototype.slice.call(document.querySelectorAll('input[name=\"'+f.id+'\"]:checked')).map(function(e){return e.value;});}if(f.type==='radio'){var el=document.querySelector('input[name=\"'+f.id+'\"]:checked');return el?el.value:'';}var e2=document.getElementById(f.id);return e2?String(e2.value).trim():'';}function uuid(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();var d=Date.now();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=(d+Math.random()*16)%16|0;d=Math.floor(d/16);return (c==='x'?r:(r&0x3|0x8)).toString(16);});}form.addEventListener('submit',function(ev){ev.preventDefault();err.textContent='';var answers={},cn='',ce='',cp='';for(var i=0;i<FORM.length;i++){var f=FORM[i];var v=val(f);var empty=(Array.isArray(v)?v.length===0:!v);if(f.required&&empty){err.textContent='Please fill in all required fields.';return;}if(f.maps==='email'&&v&&!(v.indexOf('@')>0&&v.lastIndexOf('.')>v.indexOf('@'))){err.textContent='Please enter a valid email address.';return;}if(f.maps==='name')cn=Array.isArray(v)?v.join(' '):v;else if(f.maps==='email')ce=v;else if(f.maps==='phone')cp=v;else if(!empty)answers[f.id]=v;}btn.disabled=true;btn.textContent='Sending…';var rid=uuid();var row={id:rid,form_id:FORMID,agent_id:AGENTID,contact_name:cn||null,contact_email:ce||null,contact_phone:cp||null,answers:answers};fetch(SB+'/rest/v1/form_responses',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(row)}).then(function(r){if(!r.ok)throw new Error('save');form.style.display='none';done.hidden=false;window.scrollTo({top:0,behavior:'smooth'});try{fetch('https://agentapp.jaderealestate.com/api/form-notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({responseId:rid})}).catch(function(){});}catch(e){}}).catch(function(){btn.disabled=false;btn.textContent='Submit';err.textContent='Something went wrong. Please try again.';});});})();";
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(form.title||'Form')}</title>
+<style>
+:root{--jade:${primary};--ink:#15201a;--jade2:#546751;--sage:#a6b6a4;--cream:#f2efeb;--line:rgba(21,32,26,.14)}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:var(--cream);color:var(--ink);line-height:1.5}
+.top{background:var(--jade);color:#fff;padding:16px 20px;font-weight:700;font-style:italic;font-size:20px}
+.wrap{max-width:560px;margin:0 auto;padding:22px 18px 60px}
+h1{font-size:25px;color:var(--jade);margin:8px 0 4px;line-height:1.15}
+.sub{color:var(--jade2);margin:0 0 18px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
+.fld{margin-bottom:14px}
+.f{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:5px}
+.req{color:#b4532a}
+.in{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:15px;font-family:inherit;background:#fff;outline:none}
+.in:focus{border-color:var(--jade)}
+.opts{display:grid;gap:7px}
+.opt{display:flex;align-items:center;gap:9px;font-size:15px;background:var(--cream);border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer}
+.opt input{accent-color:var(--jade)}
+#sb{width:100%;margin-top:6px;background:var(--jade);color:#fff;border:0;border-radius:10px;padding:13px;font-size:16px;font-weight:700;cursor:pointer}
+#sb:disabled{opacity:.6}
+.err{color:#b4532a;font-size:14px;margin-top:10px}
+.tiny{color:var(--sage);font-size:12px;text-align:center;margin-top:18px}
+#done{text-align:center;padding:30px 10px}
+#done h2{color:var(--jade);font-size:24px;margin:0 0 6px}
+</style></head><body>
+<div class="top">${who}</div>
+<div class="wrap">
+  <h1>${esc(form.title||'Form')}</h1>
+  ${form.description?`<p class="sub">${esc(form.description)}</p>`:''}
+  <div class="card">
+    <form id="jf">${fieldHtml}<button type="submit" id="sb">Submit</button><div class="err" id="err"></div></form>
+    <div id="done" hidden><h2>Thank you!</h2><p style="color:var(--jade2)">Your response was sent${agentName?(' to '+esc(agentName)):''}. We’ll be in touch.</p></div>
+  </div>
+  <p class="tiny">Powered by Jade Real Estate</p>
+</div>
+<script>var SB=${JSON.stringify(SB)},ANON=${JSON.stringify(ANON)},FORM=${JSON.stringify(meta)},FORMID=${JSON.stringify(form.id)},AGENTID=${JSON.stringify(form.agent_id)};</script>
+<script>${submitJs}</script>
+</body></html>`;
+}
+async function handleForm(parts){
+  const id=(parts[1]||'').toLowerCase();
+  if(!/^[0-9a-f-]{36}$/.test(id)) return notFound();
+  let form=null;
+  try{
+    const r=await fetch(`${SB}/rest/v1/forms?id=eq.${id}&is_active=eq.true&select=id,agent_id,title,description,fields`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const rows=await r.json(); form=Array.isArray(rows)?rows[0]:null;
+  }catch(e){}
+  if(!form) return htmlResp(formUnavailablePage(),200);
+  let agentName='',brand={};
+  try{
+    const pr=await fetch(`${SB}/rest/v1/rpc/agent_brand_card`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_id:form.agent_id})});
+    const pb=await pr.json(); if(pb&&typeof pb==='object'&&!Array.isArray(pb)){ agentName=pb.fullName||''; brand=pb; }
+  }catch(e){}
+  return htmlResp(renderFormPage(form,agentName,brand),200);
+}
+
 async function handlePortalSite(parts, request){
   const slug=decodeURIComponent(parts[1]||'').toLowerCase();
   if(!slug) return notFound();
@@ -2184,6 +2259,7 @@ export default {
   async fetch(request, env){
     const url=new URL(request.url); const parts=url.pathname.split('/').filter(Boolean);
     if(parts[0]==='q'){ return await handleQuestionnaire(parts); }
+    if(parts[0]==='f'){ return await handleForm(parts); }
     if(parts[0]==='site'){ return await handlePortalSite(parts, request); }
     if(parts[0]==='g'){ return await handleLanding(parts); }
     if(parts[0]==='book'){ return handleBook(parts); }
