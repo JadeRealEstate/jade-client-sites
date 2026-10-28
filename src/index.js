@@ -1944,10 +1944,10 @@ h1{font-size:25px;color:var(--head);margin:8px 0 4px;line-height:1.15}
 .err{color:#b4532a;font-size:14px;margin-top:10px}.tiny{color:var(--sage);font-size:12px;text-align:center;margin-top:18px}
 #done{text-align:center;padding:30px 10px}#done h2{color:var(--head);font-size:24px;margin:0 0 6px}`;
   const eventCss=`
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:${pageBg};background-attachment:fixed;color:${C.text};line-height:1.5;min-height:100vh}
-body::before{content:'';position:fixed;inset:-25%;z-index:0;pointer-events:none;background:radial-gradient(38% 38% at 22% 28%,rgba(255,255,255,.34),transparent 62%),radial-gradient(44% 44% at 78% 72%,${C.accent}3d,transparent 60%),radial-gradient(40% 40% at 60% 18%,rgba(255,255,255,.18),transparent 55%);filter:blur(42px);opacity:.85;animation:jdrift 24s ease-in-out infinite alternate;will-change:transform}
-@keyframes jdrift{0%{transform:translate(-2%,-1%) scale(1)}50%{transform:translate(3%,2%) scale(1.09)}100%{transform:translate(-1%,3%) scale(1.04)}}
-@media (prefers-reduced-motion:reduce){body::before{animation:none}}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:${pageBg};background-size:220% 220%;color:${C.text};line-height:1.5;min-height:100vh;animation:jbg 19s ease-in-out infinite alternate}
+body::before{content:'';position:fixed;inset:-30%;z-index:0;pointer-events:none;background:radial-gradient(42% 42% at 20% 25%,rgba(255,255,255,.55),transparent 60%),radial-gradient(46% 46% at 80% 72%,${C.accent}4d,transparent 58%);filter:blur(46px);opacity:1;animation:jdrift 15s ease-in-out infinite alternate;will-change:transform}body::after{content:'';position:fixed;inset:-30%;z-index:0;pointer-events:none;background:radial-gradient(40% 40% at 72% 22%,rgba(255,255,255,.40),transparent 58%),radial-gradient(44% 44% at 28% 78%,${C.accent}40,transparent 60%);filter:blur(52px);opacity:.9;animation:jdrift2 19s ease-in-out infinite alternate;will-change:transform}
+@keyframes jdrift{0%{transform:translate(-7%,-4%) scale(1)}100%{transform:translate(8%,6%) scale(1.16)}}@keyframes jdrift2{0%{transform:translate(6%,3%) scale(1.06)}100%{transform:translate(-7%,-5%) scale(1.14)}}@keyframes jbg{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+@media (prefers-reduced-motion:reduce){body,body::before,body::after{animation:none}}
 .wrap{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:38px 18px 72px}
 .bigemoji{font-size:62px;text-align:center;line-height:1;margin-bottom:8px}
 .brandline{text-align:center;font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-bottom:10px}
