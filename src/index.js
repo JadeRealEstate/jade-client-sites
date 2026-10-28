@@ -1945,7 +1945,10 @@ h1{font-size:25px;color:var(--head);margin:8px 0 4px;line-height:1.15}
 #done{text-align:center;padding:30px 10px}#done h2{color:var(--head);font-size:24px;margin:0 0 6px}`;
   const eventCss=`
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:${pageBg};background-attachment:fixed;color:${C.text};line-height:1.5;min-height:100vh}
-.wrap{max-width:540px;margin:0 auto;padding:38px 18px 72px}
+body::before{content:'';position:fixed;inset:-25%;z-index:0;pointer-events:none;background:radial-gradient(38% 38% at 22% 28%,rgba(255,255,255,.34),transparent 62%),radial-gradient(44% 44% at 78% 72%,${C.accent}3d,transparent 60%),radial-gradient(40% 40% at 60% 18%,rgba(255,255,255,.18),transparent 55%);filter:blur(42px);opacity:.85;animation:jdrift 24s ease-in-out infinite alternate;will-change:transform}
+@keyframes jdrift{0%{transform:translate(-2%,-1%) scale(1)}50%{transform:translate(3%,2%) scale(1.09)}100%{transform:translate(-1%,3%) scale(1.04)}}
+@media (prefers-reduced-motion:reduce){body::before{animation:none}}
+.wrap{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:38px 18px 72px}
 .bigemoji{font-size:62px;text-align:center;line-height:1;margin-bottom:8px}
 .brandline{text-align:center;font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-bottom:10px}
 h1{font-size:34px;font-weight:800;text-align:center;color:${C.heading};margin:0 0 6px;line-height:1.08;letter-spacing:-.01em}
