@@ -1909,6 +1909,24 @@ function renderFormPage(form, agentName, brand){
   const eMark=emoji?("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='80' font-size='82' text-anchor='middle'>"+emoji+"</text></svg>"):'';
   const favData='data:image/svg+xml,'+encodeURIComponent(emoji?eMark:jMark);
   const bigEmoji=(isEvent&&emoji)?emoji:'';
+  const ev=(form.event&&typeof form.event==='object')?form.event:{};
+  const evHost=(ev.host&&String(ev.host).trim())?String(ev.host).trim():(agentName||'');
+  const evDate=String(ev.date||'').trim(),evTime=String(ev.time||'').trim(),evLoc=String(ev.location||'').trim(),evDetails=String(ev.details||'').trim();
+  let evDateLabel='';
+  if(evDate){ try{ evDateLabel=new Date(evDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}); }catch(e){ evDateLabel=evDate; } }
+  const parseT=(t)=>{ let m=t.match(/(\d{1,2}):(\d{2})\s*([ap]\.?m\.?)?/i); if(m){ let h=+m[1],mm=+m[2],ap=(m[3]||'').toLowerCase(); if(ap.indexOf('p')===0&&h<12)h+=12; if(ap.indexOf('a')===0&&h===12)h=0; return [h,mm]; } m=t.match(/(\d{1,2})\s*([ap])\.?m\.?/i); if(m){ let h=+m[1],ap=m[2].toLowerCase(); if(ap==='p'&&h<12)h+=12; if(ap==='a'&&h===12)h=0; return [h,0]; } return null; };
+  let icsHref='';
+  if(isEvent&&evDate){ const z=(n)=>String(n).padStart(2,'0'); const ymd=evDate.replace(/-/g,''); const tm=parseT(evTime); let dtline,dtend; if(tm){ const sh=z(tm[0])+z(tm[1])+'00'; let eh=tm[0]+1; const eend=z(eh>23?23:eh)+z(tm[1])+'00'; dtline='DTSTART:'+ymd+'T'+sh; dtend='DTEND:'+ymd+'T'+eend; } else { dtline='DTSTART;VALUE=DATE:'+ymd; dtend='DTEND;VALUE=DATE:'+ymd; } const ge=(x)=>String(x||'').replace(/([,;\\])/g,'\\$1').replace(/\n/g,'\\n'); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jade Real Estate//Events//EN','BEGIN:VEVENT','UID:jadeform-'+form.id+'@jaderealestate.com','SUMMARY:'+ge(form.title||'Event'),dtline,dtend,evLoc?('LOCATION:'+ge(evLoc)):'',evDetails?('DESCRIPTION:'+ge(evDetails)):'','END:VEVENT','END:VCALENDAR'].filter(Boolean); icsHref='data:text/calendar;charset=utf-8,'+encodeURIComponent(lines.join('\r\n')); }
+  const hasEv=isEvent&&(evDateLabel||evTime||evLoc||evHost||evDetails);
+  const einfoHtml=hasEv?('<div class="einfo">'+((evDateLabel||evTime)?('<div class="erow"><div class="elab-k">When</div><div><div class="elab-v">'+esc(evDateLabel)+(evTime?((evDateLabel?' · ':'')+esc(evTime)):'')+'</div>'+(icsHref?('<a class="ecal" href="'+icsHref+'" download="event.ics">+ Add to calendar</a>'):'')+'</div></div>'):'')+(evLoc?('<div class="erow"><div class="elab-k">Where</div><div class="elab-v">'+esc(evLoc)+'</div></div>'):'')+(evHost?('<div class="erow"><div class="elab-k">Hosted by</div><div class="elab-v">'+esc(evHost)+'</div></div>'):'')+(evDetails?('<div class="edetails">'+esc(evDetails)+'</div>'):'')+'</div>'):'';
+  const EINFO_CSS=`
+.einfo{background:${C.card};border:1px solid rgba(255,255,255,.22);border-radius:18px;padding:14px 18px;margin:0 0 14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.einfo .erow{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.14);align-items:flex-start}
+.einfo .erow:last-child{border-bottom:0}
+.elab-k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;opacity:.65;min-width:82px;font-weight:800;padding-top:2px}
+.elab-v{font-weight:600;font-size:15px}
+.ecal{display:inline-block;margin-top:4px;font-size:12.5px;font-weight:800;color:${C.accent};text-decoration:none}
+.edetails{margin-top:4px;font-size:14px;opacity:.95;line-height:1.55;white-space:pre-wrap}`;
   const classicCss=`
 :root{--jade:${C.accent};--ink:${C.text};--jade2:#546751;--sage:#a6b6a4;--cream:${C.bg1};--card:${C.card};--head:${C.heading};--line:rgba(21,32,26,.14)}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:var(--cream);color:var(--ink);line-height:1.5}
@@ -1938,12 +1956,13 @@ h1{font-size:34px;font-weight:800;text-align:center;color:${C.heading};margin:0 
 .err{color:#ffd9cc;font-size:14px;margin-top:10px;text-align:center}.tiny{text-align:center;font-size:12px;opacity:.75;margin-top:20px}
 #done{text-align:center;padding:36px 10px}#done h2{font-size:28px;margin:0 0 6px;color:${C.heading}}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(form.title||'Form')}</title><link rel="icon" href="${favData}">
-<style>${isEvent?eventCss:classicCss}</style></head><body>
+<style>${isEvent?eventCss+EINFO_CSS:classicCss}</style></head><body>
 ${isEvent?'':`<div class="top">${who}</div>`}
 <div class="wrap">
   ${isEvent?(`${bigEmoji?`<div class="bigemoji">${bigEmoji}</div>`:''}<div class="brandline">${who}</div>`):''}
   <h1>${esc(form.title||'Form')}</h1>
   ${form.description?`<p class="sub">${esc(form.description)}</p>`:''}
+  ${einfoHtml}
   <div class="card">
     <form id="jf">${fieldHtml}<button type="submit" id="sb">${isEvent?'RSVP':'Submit'}</button><div class="err" id="err"></div></form>
     <div id="done" hidden><h2>${isEvent?'You’re in! 🎉':'Thank you!'}</h2><p style="opacity:.9">Your response was sent${agentName?(' to '+esc(agentName)):''}.</p></div>
