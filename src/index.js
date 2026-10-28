@@ -1994,7 +1994,7 @@ async function handleForm(parts){
   if(!/^[0-9a-f-]{36}$/.test(id)) return notFound();
   let form=null;
   try{
-    const r=await fetch(`${SB}/rest/v1/forms?id=eq.${id}&is_active=eq.true&select=*`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const r=await fetch(`${SB}/rest/v1/rpc/get_public_form`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_id:id})});
     const rows=await r.json(); form=Array.isArray(rows)?rows[0]:null;
   }catch(e){}
   if(!form) return htmlResp(formUnavailablePage(),200);
