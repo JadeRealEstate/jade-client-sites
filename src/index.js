@@ -2342,7 +2342,8 @@ function asLegal(pub){
     +'<p class="as-copy">&copy; '+yr+' Jade Real Estate &middot; Equal Housing Opportunity</p>'
     +'</div></footer>';
 }
-function asSection(sec, pub){
+function asSection(sec, pub, opts){
+  opts=opts||{};
   if(!sec || sec.enabled===false) return '';
   const t=sec.type||'text'; const title=sec.title?('<h2 class="as-h2">'+esc(sec.title)+'</h2>'):'';
   const idAttr=' id="'+esc(sec.id||t)+'"';
@@ -2352,11 +2353,34 @@ function asSection(sec, pub){
   if(t==='services'){ const items=(sec.items||[]).map(function(it){return '<div class="as-card"><div class="as-ct">'+esc(it.title||'')+'</div>'+(it.body?'<p>'+esc(it.body)+'</p>':'')+'</div>';}).join(''); return '<section class="as-sec"'+idAttr+'><div class="as-wrap">'+title+body+'<div class="as-grid3">'+items+'</div></div></section>'; }
   if(t==='faqs'){ const items=(sec.items||[]).map(function(it){return '<details class="as-faq"><summary>'+esc(it.q||it.title||'')+'</summary><div>'+esc(it.a||it.body||'')+'</div></details>';}).join(''); return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+items+'</div></section>'; }
   if(t==='testimonials'){ const items=(sec.items||[]).map(function(it){return '<figure class="as-quote"><blockquote>&ldquo;'+esc(it.quote||it.body||'')+'&rdquo;</blockquote><figcaption>'+esc(it.name||'')+'</figcaption></figure>';}).join(''); return '<section class="as-sec"'+idAttr+'><div class="as-wrap">'+title+'<div class="as-grid2">'+items+'</div></div></section>'; }
-  if(t==='resources'){ const items=(sec.items||[]).map(function(it){ const href=it.url?asUrl(it.url):'#'; const label=it.lead?'Get the guide':'Download'; return '<div class="as-res"><div class="as-ricon">PDF</div><div class="as-rbody"><div class="as-ct">'+esc(it.title||'')+'</div>'+(it.desc?'<p>'+esc(it.desc)+'</p>':'')+'</div><a class="as-btn ghost" href="'+esc(href)+'"'+(it.url?' target="_blank" rel="noopener"':'')+'>'+label+'</a></div>';}).join(''); return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+items+'</div></section>'; }
+  if(t==='resources'){
+    const items=sec.items||[];
+    const leadItems=items.filter(function(it){return it&&it.lead!==false&&it.resourceId;});
+    const linkItems=items.filter(function(it){return !(it&&it.lead!==false&&it.resourceId);});
+    const live=!!(opts.live&&opts.slug&&leadItems.length);
+    const card=function(it,btn){ return '<div class="as-res"><div class="as-ricon">PDF</div><div class="as-rbody"><div class="as-ct">'+esc(it.title||'')+'</div>'+(it.desc?'<p>'+esc(it.desc)+'</p>':'')+'</div>'+(btn||'')+'</div>'; };
+    if(live){
+      const leadCards=leadItems.map(function(it){ return card(it,'<button type="button" class="as-btn ghost as-gbtn" data-rid="'+esc(it.resourceId)+'" data-label="'+esc(it.title||'guide')+'">Get the guide</button>'); }).join('');
+      const linkCards=linkItems.map(function(it){ const href=it.url?asUrl(it.url):'#'; return card(it,'<a class="as-btn ghost" href="'+esc(href)+'"'+(it.url?' target="_blank" rel="noopener"':'')+'>Download</a>'); }).join('');
+      return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body
+        +'<form class="as-leadform" data-slug="'+esc(opts.slug)+'" onsubmit="return false">'
+        +'<div class="as-lf"><input name="nm" placeholder="Your name" autocomplete="name"><input name="em" type="email" placeholder="Email" autocomplete="email"><input name="ph" placeholder="Phone (optional)" autocomplete="tel"></div>'
+        +'<input class="as-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">'
+        +'<div class="as-reslist">'+leadCards+'</div>'
+        +'<div class="as-lfmsg" aria-live="polite"></div>'
+        +'<p class="as-lffine">Enter your name &amp; email once, then grab any guide — we’ll email your copy.</p>'
+        +'</form>'
+        +(linkCards?'<div class="as-reslist" style="margin-top:12px">'+linkCards+'</div>':'')
+        +'</div></section>';
+    }
+    const staticCards=items.map(function(it){ const href=it.url?asUrl(it.url):'#'; const label=(it.lead!==false&&it.resourceId)?'Get the guide':'Download'; return card(it,'<a class="as-btn ghost" href="'+esc(href)+'"'+(it.url?' target="_blank" rel="noopener"':'')+'>'+label+'</a>'); }).join('');
+    return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+'<div class="as-reslist">'+staticCards+'</div></div></section>';
+  }
   if(t==='booking'){ const url=sec.bookingUrl||sec.url||(pub.contact&&pub.contact.bookingUrl)||'#'; return '<section class="as-sec as-cta"'+idAttr+'><div class="as-wrap as-narrow" style="text-align:center">'+title+body+'<a class="as-btn" href="'+esc(asUrl(url))+'">'+esc(sec.ctaLabel||'Book a call')+'</a></div></section>'; }
   return '<section class="as-sec"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+img+'</div></section>';
 }
-function renderAgentSite(pub, title){
+function renderAgentSite(pub, title, opts){
+  opts=opts||{};
   pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
   const hero=pub.hero||{}; const secs=Array.isArray(pub.sections)?pub.sections:[];
   const navItems=secs.filter(function(s){return s.enabled!==false && s.inNav && s.title;}).map(function(s){return '<a href="#'+esc(s.id||s.type)+'">'+esc(s.navLabel||s.title)+'</a>';}).join('');
@@ -2392,9 +2416,14 @@ function renderAgentSite(pub, title){
     +'.as-faq{border-bottom:1px solid var(--line);padding:14px 0}.as-faq summary{font-weight:600;cursor:pointer;list-style:none}.as-faq summary::-webkit-details-marker{display:none}.as-faq div{margin-top:8px;color:#3a4a3c}'
     +'.as-quote{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}.as-quote blockquote{margin:0;font-size:17px}.as-quote figcaption{margin-top:10px;font-weight:700;color:var(--p)}'
     +'.as-res{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}.as-ricon{width:40px;height:48px;border-radius:6px;background:var(--cream);color:var(--p);font-size:11px;font-weight:700;display:grid;place-items:center;flex:0 0 auto}.as-rbody{flex:1;min-width:0}.as-res p{margin:4px 0 0;color:#3a4a3c;font-size:14px}'
+    +'.as-leadform{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;position:relative}'
+    +'.as-lf{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.as-lf input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:14px;background:#fff;color:var(--ink)}.as-lf input:focus{outline:none;border-color:var(--p)}'
+    +'.as-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}'
+    +'.as-gbtn{cursor:pointer;font:inherit}.as-gbtn.got{background:var(--p);color:#fff;border-color:var(--p)}'
+    +'.as-lfmsg{font-size:13px;font-weight:600;color:#b4452f;margin-top:10px;min-height:1px}.as-lffine{font-size:12px;color:#6a756d;margin:10px 0 0}'
     +'.as-cta{background:var(--p);color:#fff}.as-cta .as-h2{color:#fff}.as-cta .as-btn{background:#fff;color:var(--p);border-color:#fff}'
     +'.as-ftr{background:var(--ink);color:#cdd6cc;padding:40px 0;margin-top:0}.as-ftr .as-wrap{max-width:900px}.as-fbrand{font-family:"DM Serif Display",Georgia,serif;font-size:22px;color:#fff}.as-fc{margin:6px 0 16px}.as-fc a{color:#cdd6cc;text-decoration:none}.as-eho{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.04em;color:#fff;margin-bottom:10px}.as-legal{font-size:12px;line-height:1.6;color:#9fb09d;margin:0 0 10px}.as-copy{font-size:12px;color:#7f907d;margin:0}'
-    +'@media(max-width:760px){.as-nav{display:none}.as-split,.as-grid3,.as-grid2{grid-template-columns:1fr}}'
+    +'@media(max-width:760px){.as-nav{display:none}.as-split,.as-grid3,.as-grid2,.as-lf{grid-template-columns:1fr}}'
     +'</style></head><body>';
   const header='<header class="as-hd"><div class="as-hdin">'+logo+'<nav class="as-nav">'+navItems+'<a class="as-btn" href="'+esc(bookUrl)+'">'+esc((pub.contact&&pub.contact.ctaLabel)||'Book a call')+'</a></nav></div></header>';
   const heroHtml='<section class="as-hero"><div class="as-wrap">'
@@ -2403,8 +2432,34 @@ function renderAgentSite(pub, title){
     +(hero.subhead?'<p class="sub">'+esc(hero.subhead)+'</p>':'')
     +'<div class="as-hbtns"><a class="as-btn" href="'+esc(asUrl(cta1.href||bookUrl))+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':'')+'</div>'
     +heroImg+'</div></section>';
-  const body=secs.map(function(s){return asSection(s,pub);}).join('');
-  return head+header+heroHtml+body+asLegal(pub)+'</body></html>';
+  const body=secs.map(function(s){return asSection(s,pub,opts);}).join('');
+  const anyLead=secs.some(function(s){return s&&s.type==='resources'&&s.enabled!==false&&(s.items||[]).some(function(it){return it&&it.lead!==false&&it.resourceId;});});
+  const leadScript=(opts.live&&opts.slug&&anyLead)?asResourceScript():'';
+  return head+header+heroHtml+body+asLegal(pub)+leadScript+'</body></html>';
+}
+function asResourceScript(){
+  return '<script>(function(){'
+    +'var CAP='+JSON.stringify(AS_CAPTURE)+';'
+    +'var forms=document.querySelectorAll("form.as-leadform");'
+    +'Array.prototype.forEach.call(forms,function(f){'
+    +'var slug=f.getAttribute("data-slug");var msg=f.querySelector(".as-lfmsg");'
+    +'Array.prototype.forEach.call(f.querySelectorAll(".as-gbtn"),function(b){'
+    +'b.addEventListener("click",function(){'
+    +'msg.style.color="";msg.textContent="";'
+    +'var nm=f.nm.value.trim(),em=f.em.value.trim(),ph=f.ph.value.trim(),hp=f.website.value;'
+    +'if(!nm){msg.textContent="Please enter your name.";return;}'
+    +'if(!em||em.indexOf("@")<0){msg.textContent="Please enter a valid email.";return;}'
+    +'var rid=b.getAttribute("data-rid"),label=b.getAttribute("data-label")||"guide";'
+    +'b.disabled=true;var o=b.textContent;b.textContent="Sending\\u2026";'
+    +'fetch(CAP,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({slug:slug,source:"website",resourceId:rid,name:nm,email:em,phone:ph,website:hp,action:"guide"})})'
+    +'.then(function(r){return r.json().catch(function(){return{ok:false};});})'
+    +'.then(function(j){if(!j.ok){b.disabled=false;b.textContent=o;msg.textContent=(j&&j.error)||"Something went wrong \\u2014 try again.";return;}'
+    +'var dl=j.guideUrl;b.textContent="\\u2713 "+label;b.classList.add("got");'
+    +'if(dl){try{var a=document.createElement("a");a.href=dl;a.download="";a.target="_blank";document.body.appendChild(a);a.click();a.remove();}catch(e){}}'
+    +'msg.style.color="#335143";msg.textContent="Emailed to "+em+". Grab another if you like.";})'
+    +'.catch(function(){b.disabled=false;b.textContent=o;msg.textContent="Network error \\u2014 try again.";});'
+    +'});});});'
+    +'})();</script>';
 }
 function renderLinkBio(pub, title){
   pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
@@ -2422,6 +2477,7 @@ function renderLinkBio(pub, title){
     +'</div></body></html>';
 }
 const AS_DEMO={brand:{name:'Emilie Smith Real Estate',logoUrl:'',primaryColor:'#335143',secondaryColor:'#546751',accentColor:'#a6b6a4'},contact:{name:'Emilie Smith',email:'emilie@jaderealestate.com',phone:'(303) 555-0142',bookingUrl:'https://client.jaderealestate.com/book/emilie',ctaLabel:'Book a call'},hero:{eyebrow:'Denver & the Front Range',headline:'Your next move, thoughtfully planned.',subhead:'Buying, selling, or finding your place in Colorado — let’s build a plan around what matters to you.',ctaPrimary:{label:'Book a conversation',href:'https://client.jaderealestate.com/book/emilie'},ctaSecondary:{label:'Explore free guides',href:'#resources'}},sections:[{id:'about',type:'about',title:'A personal approach. A clear plan.',inNav:true,navLabel:'About',body:'You deserve straightforward answers, useful guidance, and someone who keeps the details moving. Local knowledge, clear communication, and a smoother experience from start to finish.'},{id:'services',type:'services',title:'How I can help',inNav:true,navLabel:'Services',items:[{title:'Buying',body:'Get informed, ask the right questions, and find a home that fits your goals.'},{title:'Selling',body:'Prepare with confidence and position your home for what’s next.'},{title:'Relocating',body:'Feel at home in Colorado with helpful guidance and local insights.'}]},{id:'resources',type:'resources',title:'Good information. More confident decisions.',inNav:true,navLabel:'Resources',body:'Practical guides to help you prepare, ask better questions, and take the next step.',items:[{title:'Denver relocation guide',desc:'Neighborhood questions, moving preparation, and a useful starting checklist.',lead:true},{title:'Buyer preparation checklist',desc:'Organize your priorities before your first consultation.',lead:true}]},{id:'faqs',type:'faqs',title:'Common questions',inNav:true,navLabel:'FAQs',items:[{q:'How do we get started?',a:'We start with a short conversation about your goals, timeline, and what matters most — no pressure.'},{q:'What areas do you serve?',a:'The Denver metro and the Front Range.'}]},{id:'booking',type:'booking',title:'Start with a little clarity.',ctaLabel:'Book a conversation',bookingUrl:'https://client.jaderealestate.com/book/emilie',body:'Explore practical guidance for your next move.'}]};
+const AS_CAPTURE='https://agentapp.jaderealestate.com/api/lead-capture';
 const AS_CORS={'access-control-allow-origin':'*','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'content-type'};
 async function handleSitePreview(request){
   if(request.method==='OPTIONS') return new Response(null,{status:204,headers:AS_CORS});
@@ -2438,7 +2494,7 @@ async function handleAgentSite(parts, kind){
   let row=null;
   try{ const r=await fetch(`${SB}/rest/v1/rpc/get_agent_site`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_slug:slug,p_kind:kind})}); const j=await r.json(); row=Array.isArray(j)?j[0]:(j&&j.published?j:null); }catch(e){}
   if(!row||!row.published) return notFound();
-  const html=kind==='linkbio'?renderLinkBio(row.published,row.title||''):renderAgentSite(row.published,row.title||'');
+  const html=kind==='linkbio'?renderLinkBio(row.published,row.title||''):renderAgentSite(row.published,row.title||'',{slug:slug,live:true});
   return new Response(html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'public, max-age=120'}});
 }
 
