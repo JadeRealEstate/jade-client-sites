@@ -2412,6 +2412,15 @@ function renderLinkBio(pub, title){
     +'</div></body></html>';
 }
 const AS_DEMO={brand:{name:'Emilie Smith Real Estate',logoUrl:'',primaryColor:'#335143',secondaryColor:'#546751',accentColor:'#a6b6a4'},contact:{name:'Emilie Smith',email:'emilie@jaderealestate.com',phone:'(303) 555-0142',bookingUrl:'https://client.jaderealestate.com/book/emilie',ctaLabel:'Book a call'},hero:{eyebrow:'Denver & the Front Range',headline:'Your next move, thoughtfully planned.',subhead:'Buying, selling, or finding your place in Colorado — let’s build a plan around what matters to you.',ctaPrimary:{label:'Book a conversation',href:'https://client.jaderealestate.com/book/emilie'},ctaSecondary:{label:'Explore free guides',href:'#resources'}},sections:[{id:'about',type:'about',title:'A personal approach. A clear plan.',inNav:true,navLabel:'About',body:'You deserve straightforward answers, useful guidance, and someone who keeps the details moving. Local knowledge, clear communication, and a smoother experience from start to finish.'},{id:'services',type:'services',title:'How I can help',inNav:true,navLabel:'Services',items:[{title:'Buying',body:'Get informed, ask the right questions, and find a home that fits your goals.'},{title:'Selling',body:'Prepare with confidence and position your home for what’s next.'},{title:'Relocating',body:'Feel at home in Colorado with helpful guidance and local insights.'}]},{id:'resources',type:'resources',title:'Good information. More confident decisions.',inNav:true,navLabel:'Resources',body:'Practical guides to help you prepare, ask better questions, and take the next step.',items:[{title:'Denver relocation guide',desc:'Neighborhood questions, moving preparation, and a useful starting checklist.',lead:true},{title:'Buyer preparation checklist',desc:'Organize your priorities before your first consultation.',lead:true}]},{id:'faqs',type:'faqs',title:'Common questions',inNav:true,navLabel:'FAQs',items:[{q:'How do we get started?',a:'We start with a short conversation about your goals, timeline, and what matters most — no pressure.'},{q:'What areas do you serve?',a:'The Denver metro and the Front Range.'}]},{id:'booking',type:'booking',title:'Start with a little clarity.',ctaLabel:'Book a conversation',bookingUrl:'https://client.jaderealestate.com/book/emilie',body:'Explore practical guidance for your next move.'}]};
+const AS_CORS={'access-control-allow-origin':'*','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'content-type'};
+async function handleSitePreview(request){
+  if(request.method==='OPTIONS') return new Response(null,{status:204,headers:AS_CORS});
+  if(request.method!=='POST') return new Response('method',{status:405,headers:AS_CORS});
+  let body={}; try{ body=await request.json(); }catch(e){}
+  const content=body&&body.content?body.content:{}; const kind=body&&body.kind==='linkbio'?'linkbio':'website';
+  const html=kind==='linkbio'?renderLinkBio(content,(content.brand&&content.brand.name)||''):renderAgentSite(content,(content.brand&&content.brand.name)||'');
+  return new Response(html,{headers:Object.assign({'content-type':'text/html; charset=utf-8'},AS_CORS)});
+}
 async function handleAgentSite(parts, kind){
   const slug=decodeURIComponent(parts[1]||'').toLowerCase().replace(/[^a-z0-9-]/g,'');
   if(!slug) return notFound();
@@ -2429,6 +2438,7 @@ export default {
     if(parts[0]==='q'){ return await handleQuestionnaire(parts); }
     if(parts[0]==='f'){ return await handleForm(parts); }
     if(parts[0]==='site'){ return await handlePortalSite(parts, request); }
+    if(parts[0]==='w-preview'){ return await handleSitePreview(request); }
     if(parts[0]==='w'){ return await handleAgentSite(parts, 'website'); }
     if(parts[0]==='l'){ return await handleAgentSite(parts, 'linkbio'); }
     if(parts[0]==='g'){ return await handleLanding(parts); }
