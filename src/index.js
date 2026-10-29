@@ -2319,6 +2319,16 @@ ${guideMode?`<script>
 
 // ===== Agent websites + link-in-bio — public, served at /w/<slug> and /l/<slug> =====
 function asColors(b){ b=b||{}; return { p:b.primaryColor||'#335143', s:b.secondaryColor||'#546751', a:b.accentColor||'#a6b6a4', ink:'#15201a', cream:'#f2efeb' }; }
+function asMono(name, color){
+  const init=String(name||'').trim().replace(/[^A-Za-z ]/g,'').split(/\s+/).filter(Boolean).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase()||'J';
+  const bg=/^#[0-9a-fA-F]{6}$/.test(color||'')?color:'#335143';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="'+bg+'"/><text x="50%" y="55%" dominant-baseline="central" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-weight="400" font-size="'+(init.length>1?30:42)+'" fill="#f2efeb">'+init+'</text></svg>';
+  return 'data:image/svg+xml,'+encodeURIComponent(svg);
+}
+function asFavicon(b){ b=b||{}; const col=asColors(b);
+  if(b.faviconUrl){ return '<link rel="icon" href="'+esc(asUrl(b.faviconUrl))+'">'; }
+  return '<link rel="icon" type="image/svg+xml" href="'+asMono(b.name,col.p)+'">';
+}
 function asUrl(u){ u=String(u||'').trim(); if(!u) return ''; if(/^(https?:|mailto:|tel:|#|\/)/i.test(u)) return u; return 'https://'+u; }
 function asTel(p){ const d=String(p||'').replace(/[^0-9+]/g,''); return d; }
 function asLegal(pub){
@@ -2355,7 +2365,7 @@ function renderAgentSite(pub, title){
   const cta1=hero.ctaPrimary||{label:'Book a call',href:bookUrl}; const cta2=hero.ctaSecondary;
   const heroImg=hero.image?('<div class="as-heroimg"><img src="'+esc(asUrl(hero.image))+'" alt=""></div>'):'';
   const head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    +'<title>'+esc(title||b.name||c.name||'Real Estate')+'</title>'
+    +'<title>'+esc(title||b.name||c.name||'Real Estate')+'</title>'+asFavicon(b)
     +(hero.subhead?'<meta name="description" content="'+esc(String(hero.subhead).slice(0,160))+'">':'')
     +'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
     +'<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">'
@@ -2400,7 +2410,7 @@ function renderLinkBio(pub, title){
   pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
   const links=(pub.links||[]).filter(function(l){return l&&l.label&&l.enabled!==false;}).map(function(l){return '<a class="lb-link" href="'+esc(asUrl(l.url||'#'))+'"'+(/^https?:/i.test(asUrl(l.url||''))?' target="_blank" rel="noopener"':'')+'>'+esc(l.label)+'</a>';}).join('');
   const tel=asTel(c.phone);
-  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title||b.name||c.name||'Links')+'</title>'
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title||b.name||c.name||'Links')+'</title>'+asFavicon(b)
     +'<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">'
     +'<style>:root{--p:'+col.p+';--cream:'+col.cream+'}*{box-sizing:border-box}body{margin:0;font-family:Montserrat,sans-serif;background:var(--cream);color:#15201a}.lb{max-width:440px;margin:0 auto;padding:40px 20px 60px;text-align:center}.lb-logo{height:46px;margin-bottom:14px}.lb-name{font-family:"DM Serif Display",Georgia,serif;font-size:26px;color:var(--p)}.lb-tag{color:#3a4a3c;margin:6px 0 24px}.lb-link{display:block;background:#fff;border:1px solid #e3e6e1;border-radius:12px;padding:15px;margin:10px 0;text-decoration:none;color:#15201a;font-weight:600}.lb-link:hover{border-color:var(--p)}.lb-c{display:flex;gap:10px;justify-content:center;margin-top:18px}.lb-c a{background:var(--p);color:#fff;text-decoration:none;border-radius:10px;padding:11px 18px;font-weight:600;font-size:14px}.lb-ft{margin-top:28px;font-size:11px;color:#7f907d;line-height:1.5}</style></head><body><div class="lb">'
     +(b.logoUrl?'<img class="lb-logo" src="'+esc(asUrl(b.logoUrl))+'" alt="">':'')
