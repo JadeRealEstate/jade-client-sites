@@ -2379,9 +2379,19 @@ function asSection(sec, pub, opts){
   if(t==='booking'){ const url=sec.bookingUrl||sec.url||(pub.contact&&pub.contact.bookingUrl)||'#'; return '<section class="as-sec as-cta"'+idAttr+'><div class="as-wrap as-narrow" style="text-align:center">'+title+body+'<a class="as-btn" href="'+esc(asUrl(url))+'">'+esc(sec.ctaLabel||'Book a call')+'</a></div></section>'; }
   return '<section class="as-sec"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+img+'</div></section>';
 }
+function asFonts(b){
+  const lux=(b&&b.fontStyle==='luxury');
+  return {
+    href: lux
+      ? 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Montserrat:wght@400;500;600;700&display=swap'
+      : 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap',
+    serif: lux ? '"Cormorant Garamond",Georgia,serif' : '"DM Serif Display",Georgia,serif',
+    serifw: lux ? '600' : '400'
+  };
+}
 function renderAgentSite(pub, title, opts){
   opts=opts||{};
-  pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
+  pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b); const fn=asFonts(b);
   const hero=pub.hero||{}; const secs=Array.isArray(pub.sections)?pub.sections:[];
   const navItems=secs.filter(function(s){return s.enabled!==false && s.inNav && s.title;}).map(function(s){return '<a href="#'+esc(s.id||s.type)+'">'+esc(s.navLabel||s.title)+'</a>';}).join('');
   const bookUrl=asUrl((pub.contact&&pub.contact.bookingUrl)||hero.ctaPrimary&&hero.ctaPrimary.href||'#');
@@ -2392,12 +2402,12 @@ function renderAgentSite(pub, title, opts){
     +'<title>'+esc(title||b.name||c.name||'Real Estate')+'</title>'+asFavicon(b)
     +(hero.subhead?'<meta name="description" content="'+esc(String(hero.subhead).slice(0,160))+'">':'')
     +'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-    +'<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    +'<link href="'+fn.href+'" rel="stylesheet">'
     +'<style>'
-    +':root{--p:'+col.p+';--s:'+col.s+';--a:'+col.a+';--ink:'+col.ink+';--cream:'+col.cream+';--line:#e3e6e1}'
+    +':root{--p:'+col.p+';--s:'+col.s+';--a:'+col.a+';--ink:'+col.ink+';--cream:'+col.cream+';--line:#e3e6e1;--serif:'+fn.serif+';--serifw:'+fn.serifw+'}'
     +'*{box-sizing:border-box}body{margin:0;font-family:Montserrat,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.6}'
     +'.as-wrap{max-width:1040px;margin:0 auto;padding:0 24px}.as-narrow{max-width:760px}'
-    +'h1,h2,.as-word,.as-h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400}'
+    +'h1,h2,.as-word,.as-h2{font-family:var(--serif);font-weight:var(--serifw)}'
     +'.as-hd{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--line)}'
     +'.as-hdin{max-width:1040px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:18px}'
     +'.as-logo{height:30px;width:auto;display:block}.as-word{font-size:22px;color:var(--p)}'
@@ -2422,7 +2432,7 @@ function renderAgentSite(pub, title, opts){
     +'.as-gbtn{cursor:pointer;font:inherit}.as-gbtn.got{background:var(--p);color:#fff;border-color:var(--p)}'
     +'.as-lfmsg{font-size:13px;font-weight:600;color:#b4452f;margin-top:10px;min-height:1px}.as-lffine{font-size:12px;color:#6a756d;margin:10px 0 0}'
     +'.as-cta{background:var(--p);color:#fff}.as-cta .as-h2{color:#fff}.as-cta .as-btn{background:#fff;color:var(--p);border-color:#fff}'
-    +'.as-ftr{background:var(--ink);color:#cdd6cc;padding:40px 0;margin-top:0}.as-ftr .as-wrap{max-width:900px}.as-fbrand{font-family:"DM Serif Display",Georgia,serif;font-size:22px;color:#fff}.as-fc{margin:6px 0 16px}.as-fc a{color:#cdd6cc;text-decoration:none}.as-eho{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.04em;color:#fff;margin-bottom:10px}.as-legal{font-size:12px;line-height:1.6;color:#9fb09d;margin:0 0 10px}.as-copy{font-size:12px;color:#7f907d;margin:0}'
+    +'.as-ftr{background:var(--ink);color:#cdd6cc;padding:40px 0;margin-top:0}.as-ftr .as-wrap{max-width:900px}.as-fbrand{font-family:var(--serif);font-size:22px;color:#fff}.as-fc{margin:6px 0 16px}.as-fc a{color:#cdd6cc;text-decoration:none}.as-eho{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.04em;color:#fff;margin-bottom:10px}.as-legal{font-size:12px;line-height:1.6;color:#9fb09d;margin:0 0 10px}.as-copy{font-size:12px;color:#7f907d;margin:0}'
     +'@media(max-width:760px){.as-nav{display:none}.as-split,.as-grid3,.as-grid2,.as-lf{grid-template-columns:1fr}}'
     +'</style></head><body>';
   const header='<header class="as-hd"><div class="as-hdin">'+logo+'<nav class="as-nav">'+navItems+'<a class="as-btn" href="'+esc(bookUrl)+'">'+esc((pub.contact&&pub.contact.ctaLabel)||'Book a call')+'</a></nav></div></header>';
@@ -2462,12 +2472,12 @@ function asResourceScript(){
     +'})();</script>';
 }
 function renderLinkBio(pub, title){
-  pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
+  pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b); const fn=asFonts(b);
   const links=(pub.links||[]).filter(function(l){return l&&l.label&&l.enabled!==false;}).map(function(l){return '<a class="lb-link" href="'+esc(asUrl(l.url||'#'))+'"'+(/^https?:/i.test(asUrl(l.url||''))?' target="_blank" rel="noopener"':'')+'>'+esc(l.label)+'</a>';}).join('');
   const tel=asTel(c.phone);
   return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title||b.name||c.name||'Links')+'</title>'+asFavicon(b)
-    +'<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">'
-    +'<style>:root{--p:'+col.p+';--cream:'+col.cream+'}*{box-sizing:border-box}body{margin:0;font-family:Montserrat,sans-serif;background:var(--cream);color:#15201a}.lb{max-width:440px;margin:0 auto;padding:40px 20px 60px;text-align:center}.lb-logo{height:46px;margin-bottom:14px}.lb-name{font-family:"DM Serif Display",Georgia,serif;font-size:26px;color:var(--p)}.lb-tag{color:#3a4a3c;margin:6px 0 24px}.lb-link{display:block;background:#fff;border:1px solid #e3e6e1;border-radius:12px;padding:15px;margin:10px 0;text-decoration:none;color:#15201a;font-weight:600}.lb-link:hover{border-color:var(--p)}.lb-c{display:flex;gap:10px;justify-content:center;margin-top:18px}.lb-c a{background:var(--p);color:#fff;text-decoration:none;border-radius:10px;padding:11px 18px;font-weight:600;font-size:14px}.lb-ft{margin-top:28px;font-size:11px;color:#7f907d;line-height:1.5}</style></head><body><div class="lb">'
+    +'<link href="'+fn.href+'" rel="stylesheet">'
+    +'<style>:root{--p:'+col.p+';--cream:'+col.cream+';--serif:'+fn.serif+'}*{box-sizing:border-box}body{margin:0;font-family:Montserrat,sans-serif;background:var(--cream);color:#15201a}.lb{max-width:440px;margin:0 auto;padding:40px 20px 60px;text-align:center}.lb-logo{height:46px;margin-bottom:14px}.lb-name{font-family:var(--serif);font-size:26px;color:var(--p)}.lb-tag{color:#3a4a3c;margin:6px 0 24px}.lb-link{display:block;background:#fff;border:1px solid #e3e6e1;border-radius:12px;padding:15px;margin:10px 0;text-decoration:none;color:#15201a;font-weight:600}.lb-link:hover{border-color:var(--p)}.lb-c{display:flex;gap:10px;justify-content:center;margin-top:18px}.lb-c a{background:var(--p);color:#fff;text-decoration:none;border-radius:10px;padding:11px 18px;font-weight:600;font-size:14px}.lb-ft{margin-top:28px;font-size:11px;color:#7f907d;line-height:1.5}</style></head><body><div class="lb">'
     +(b.logoUrl?'<img class="lb-logo" src="'+esc(asUrl(b.logoUrl))+'" alt="">':'')
     +'<div class="lb-name">'+esc(b.name||c.name||'')+'</div>'
     +(pub.tagline?'<div class="lb-tag">'+esc(pub.tagline)+'</div>':'')
