@@ -2317,12 +2317,120 @@ ${guideMode?`<script>
   return body;
 }
 
+// ===== Agent websites + link-in-bio — public, served at /w/<slug> and /l/<slug> =====
+function asColors(b){ b=b||{}; return { p:b.primaryColor||'#335143', s:b.secondaryColor||'#546751', a:b.accentColor||'#a6b6a4', ink:'#15201a', cream:'#f2efeb' }; }
+function asUrl(u){ u=String(u||'').trim(); if(!u) return ''; if(/^(https?:|mailto:|tel:|#|\/)/i.test(u)) return u; return 'https://'+u; }
+function asTel(p){ const d=String(p||'').replace(/[^0-9+]/g,''); return d; }
+function asLegal(pub){
+  const c=pub.contact||{}; const b=pub.brand||{};
+  const nm=esc(c.name||b.name||'Your agent'); const yr=new Date().getFullYear();
+  return '<footer class="as-ftr"><div class="as-wrap">'
+    +'<div class="as-fbrand">'+esc(b.name||c.name||'')+'</div>'
+    +'<div class="as-fc">'+(c.phone?'<a href="tel:'+esc(asTel(c.phone))+'">'+esc(c.phone)+'</a>':'')+(c.email?(c.phone?' &middot; ':'')+'<a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'')+'</div>'
+    +'<div class="as-eho"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3 2 11h3v9h6v-6h2v6h6v-9h3z"/></svg> Equal Housing Opportunity</div>'
+    +'<p class="as-legal">'+nm+' is a licensed real estate agent in the State of Colorado, brokered by <strong>Jade Real Estate</strong> (KCWL Holdings LLC), Denver Metro. All information is deemed reliable but not guaranteed and should be independently verified. This website is for informational purposes only and is not legal, tax, or financial advice. We do business in accordance with the Federal Fair Housing Act and Colorado law, and do not discriminate on the basis of race, color, religion, sex, disability, familial status, national origin, sexual orientation, gender identity, or any other protected class.</p>'
+    +'<p class="as-copy">&copy; '+yr+' Jade Real Estate &middot; Equal Housing Opportunity</p>'
+    +'</div></footer>';
+}
+function asSection(sec, pub){
+  if(!sec || sec.enabled===false) return '';
+  const t=sec.type||'text'; const title=sec.title?('<h2 class="as-h2">'+esc(sec.title)+'</h2>'):'';
+  const idAttr=' id="'+esc(sec.id||t)+'"';
+  const body=sec.body?('<div class="as-body">'+esc(sec.body).replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>').replace(/^/,'<p>').replace(/$/,'</p>')+'</div>'):'';
+  const img=sec.image?('<div class="as-simg"><img src="'+esc(asUrl(sec.image))+'" alt=""></div>'):'';
+  if(t==='about'){ return '<section class="as-sec as-about"'+idAttr+'><div class="as-wrap as-split">'+(img||'')+'<div>'+title+body+'</div></div></section>'; }
+  if(t==='services'){ const items=(sec.items||[]).map(function(it){return '<div class="as-card"><div class="as-ct">'+esc(it.title||'')+'</div>'+(it.body?'<p>'+esc(it.body)+'</p>':'')+'</div>';}).join(''); return '<section class="as-sec"'+idAttr+'><div class="as-wrap">'+title+body+'<div class="as-grid3">'+items+'</div></div></section>'; }
+  if(t==='faqs'){ const items=(sec.items||[]).map(function(it){return '<details class="as-faq"><summary>'+esc(it.q||it.title||'')+'</summary><div>'+esc(it.a||it.body||'')+'</div></details>';}).join(''); return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+items+'</div></section>'; }
+  if(t==='testimonials'){ const items=(sec.items||[]).map(function(it){return '<figure class="as-quote"><blockquote>&ldquo;'+esc(it.quote||it.body||'')+'&rdquo;</blockquote><figcaption>'+esc(it.name||'')+'</figcaption></figure>';}).join(''); return '<section class="as-sec"'+idAttr+'><div class="as-wrap">'+title+'<div class="as-grid2">'+items+'</div></div></section>'; }
+  if(t==='resources'){ const items=(sec.items||[]).map(function(it){ const href=it.url?asUrl(it.url):'#'; const label=it.lead?'Get the guide':'Download'; return '<div class="as-res"><div class="as-ricon">PDF</div><div class="as-rbody"><div class="as-ct">'+esc(it.title||'')+'</div>'+(it.desc?'<p>'+esc(it.desc)+'</p>':'')+'</div><a class="as-btn ghost" href="'+esc(href)+'"'+(it.url?' target="_blank" rel="noopener"':'')+'>'+label+'</a></div>';}).join(''); return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+items+'</div></section>'; }
+  if(t==='booking'){ const url=sec.bookingUrl||sec.url||(pub.contact&&pub.contact.bookingUrl)||'#'; return '<section class="as-sec as-cta"'+idAttr+'><div class="as-wrap as-narrow" style="text-align:center">'+title+body+'<a class="as-btn" href="'+esc(asUrl(url))+'">'+esc(sec.ctaLabel||'Book a call')+'</a></div></section>'; }
+  return '<section class="as-sec"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+img+'</div></section>';
+}
+function renderAgentSite(pub, title){
+  pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
+  const hero=pub.hero||{}; const secs=Array.isArray(pub.sections)?pub.sections:[];
+  const navItems=secs.filter(function(s){return s.enabled!==false && s.inNav && s.title;}).map(function(s){return '<a href="#'+esc(s.id||s.type)+'">'+esc(s.navLabel||s.title)+'</a>';}).join('');
+  const bookUrl=asUrl((pub.contact&&pub.contact.bookingUrl)||hero.ctaPrimary&&hero.ctaPrimary.href||'#');
+  const logo=b.logoUrl?('<img class="as-logo" src="'+esc(asUrl(b.logoUrl))+'" alt="'+esc(b.name||'')+'">'):('<span class="as-word">'+esc(b.name||c.name||'')+'</span>');
+  const cta1=hero.ctaPrimary||{label:'Book a call',href:bookUrl}; const cta2=hero.ctaSecondary;
+  const heroImg=hero.image?('<div class="as-heroimg"><img src="'+esc(asUrl(hero.image))+'" alt=""></div>'):'';
+  const head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    +'<title>'+esc(title||b.name||c.name||'Real Estate')+'</title>'
+    +(hero.subhead?'<meta name="description" content="'+esc(String(hero.subhead).slice(0,160))+'">':'')
+    +'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    +'<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    +'<style>'
+    +':root{--p:'+col.p+';--s:'+col.s+';--a:'+col.a+';--ink:'+col.ink+';--cream:'+col.cream+';--line:#e3e6e1}'
+    +'*{box-sizing:border-box}body{margin:0;font-family:Montserrat,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.6}'
+    +'.as-wrap{max-width:1040px;margin:0 auto;padding:0 24px}.as-narrow{max-width:760px}'
+    +'h1,h2,.as-word,.as-h2{font-family:"DM Serif Display",Georgia,serif;font-weight:400}'
+    +'.as-hd{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--line)}'
+    +'.as-hdin{max-width:1040px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:18px}'
+    +'.as-logo{height:30px;width:auto;display:block}.as-word{font-size:22px;color:var(--p)}'
+    +'.as-nav{margin-left:auto;display:flex;gap:22px;align-items:center}.as-nav a{color:var(--ink);text-decoration:none;font-size:14px;font-weight:500}.as-nav a:hover{color:var(--p)}'
+    +'.as-btn{display:inline-block;background:var(--p);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:11px 20px;border-radius:8px;border:1px solid var(--p)}.as-btn:hover{opacity:.93}'
+    +'.as-btn.ghost{background:transparent;color:var(--p)}'
+    +'.as-hero{padding:72px 0 56px}.as-hero .as-eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:700;color:var(--s)}'
+    +'.as-hero h1{font-size:clamp(34px,6vw,60px);line-height:1.04;margin:14px 0 16px;color:var(--ink)}'
+    +'.as-hero p.sub{font-size:18px;max-width:620px;color:#3a4a3c}.as-hbtns{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap}'
+    +'.as-heroimg img{width:100%;border-radius:16px;margin-top:34px;display:block}'
+    +'.as-sec{padding:52px 0;border-top:1px solid var(--line)}.as-alt{background:var(--cream)}'
+    +'.as-h2{font-size:clamp(26px,3.4vw,36px);color:var(--p);margin:0 0 14px}.as-body p{margin:0 0 12px}'
+    +'.as-split{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}.as-simg img{width:100%;border-radius:14px;display:block}'
+    +'.as-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}.as-grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}'
+    +'.as-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}.as-ct{font-weight:700;margin-bottom:6px}'
+    +'.as-faq{border-bottom:1px solid var(--line);padding:14px 0}.as-faq summary{font-weight:600;cursor:pointer;list-style:none}.as-faq summary::-webkit-details-marker{display:none}.as-faq div{margin-top:8px;color:#3a4a3c}'
+    +'.as-quote{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}.as-quote blockquote{margin:0;font-size:17px}.as-quote figcaption{margin-top:10px;font-weight:700;color:var(--p)}'
+    +'.as-res{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}.as-ricon{width:40px;height:48px;border-radius:6px;background:var(--cream);color:var(--p);font-size:11px;font-weight:700;display:grid;place-items:center;flex:0 0 auto}.as-rbody{flex:1;min-width:0}.as-res p{margin:4px 0 0;color:#3a4a3c;font-size:14px}'
+    +'.as-cta{background:var(--p);color:#fff}.as-cta .as-h2{color:#fff}.as-cta .as-btn{background:#fff;color:var(--p);border-color:#fff}'
+    +'.as-ftr{background:var(--ink);color:#cdd6cc;padding:40px 0;margin-top:0}.as-ftr .as-wrap{max-width:900px}.as-fbrand{font-family:"DM Serif Display",Georgia,serif;font-size:22px;color:#fff}.as-fc{margin:6px 0 16px}.as-fc a{color:#cdd6cc;text-decoration:none}.as-eho{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.04em;color:#fff;margin-bottom:10px}.as-legal{font-size:12px;line-height:1.6;color:#9fb09d;margin:0 0 10px}.as-copy{font-size:12px;color:#7f907d;margin:0}'
+    +'@media(max-width:760px){.as-nav{display:none}.as-split,.as-grid3,.as-grid2{grid-template-columns:1fr}}'
+    +'</style></head><body>';
+  const header='<header class="as-hd"><div class="as-hdin">'+logo+'<nav class="as-nav">'+navItems+'<a class="as-btn" href="'+esc(bookUrl)+'">'+esc((pub.contact&&pub.contact.ctaLabel)||'Book a call')+'</a></nav></div></header>';
+  const heroHtml='<section class="as-hero"><div class="as-wrap">'
+    +(hero.eyebrow?'<div class="as-eyebrow">'+esc(hero.eyebrow)+'</div>':'')
+    +'<h1>'+esc(hero.headline||'')+'</h1>'
+    +(hero.subhead?'<p class="sub">'+esc(hero.subhead)+'</p>':'')
+    +'<div class="as-hbtns"><a class="as-btn" href="'+esc(asUrl(cta1.href||bookUrl))+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':'')+'</div>'
+    +heroImg+'</div></section>';
+  const body=secs.map(function(s){return asSection(s,pub);}).join('');
+  return head+header+heroHtml+body+asLegal(pub)+'</body></html>';
+}
+function renderLinkBio(pub, title){
+  pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b);
+  const links=(pub.links||[]).filter(function(l){return l&&l.label&&l.enabled!==false;}).map(function(l){return '<a class="lb-link" href="'+esc(asUrl(l.url||'#'))+'"'+(/^https?:/i.test(asUrl(l.url||''))?' target="_blank" rel="noopener"':'')+'>'+esc(l.label)+'</a>';}).join('');
+  const tel=asTel(c.phone);
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title||b.name||c.name||'Links')+'</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">'
+    +'<style>:root{--p:'+col.p+';--cream:'+col.cream+'}*{box-sizing:border-box}body{margin:0;font-family:Montserrat,sans-serif;background:var(--cream);color:#15201a}.lb{max-width:440px;margin:0 auto;padding:40px 20px 60px;text-align:center}.lb-logo{height:46px;margin-bottom:14px}.lb-name{font-family:"DM Serif Display",Georgia,serif;font-size:26px;color:var(--p)}.lb-tag{color:#3a4a3c;margin:6px 0 24px}.lb-link{display:block;background:#fff;border:1px solid #e3e6e1;border-radius:12px;padding:15px;margin:10px 0;text-decoration:none;color:#15201a;font-weight:600}.lb-link:hover{border-color:var(--p)}.lb-c{display:flex;gap:10px;justify-content:center;margin-top:18px}.lb-c a{background:var(--p);color:#fff;text-decoration:none;border-radius:10px;padding:11px 18px;font-weight:600;font-size:14px}.lb-ft{margin-top:28px;font-size:11px;color:#7f907d;line-height:1.5}</style></head><body><div class="lb">'
+    +(b.logoUrl?'<img class="lb-logo" src="'+esc(asUrl(b.logoUrl))+'" alt="">':'')
+    +'<div class="lb-name">'+esc(b.name||c.name||'')+'</div>'
+    +(pub.tagline?'<div class="lb-tag">'+esc(pub.tagline)+'</div>':'')
+    +links
+    +'<div class="lb-c">'+(tel?'<a href="tel:'+esc(tel)+'">Call</a><a href="sms:'+esc(tel)+'">Text</a>':'')+(c.email?'<a href="mailto:'+esc(c.email)+'">Email</a>':'')+'</div>'
+    +'<div class="lb-ft">Brokered by Jade Real Estate &middot; Denver Metro &middot; Equal Housing Opportunity</div>'
+    +'</div></body></html>';
+}
+const AS_DEMO={brand:{name:'Emilie Smith Real Estate',logoUrl:'',primaryColor:'#335143',secondaryColor:'#546751',accentColor:'#a6b6a4'},contact:{name:'Emilie Smith',email:'emilie@jaderealestate.com',phone:'(303) 555-0142',bookingUrl:'https://client.jaderealestate.com/book/emilie',ctaLabel:'Book a call'},hero:{eyebrow:'Denver & the Front Range',headline:'Your next move, thoughtfully planned.',subhead:'Buying, selling, or finding your place in Colorado — let’s build a plan around what matters to you.',ctaPrimary:{label:'Book a conversation',href:'https://client.jaderealestate.com/book/emilie'},ctaSecondary:{label:'Explore free guides',href:'#resources'}},sections:[{id:'about',type:'about',title:'A personal approach. A clear plan.',inNav:true,navLabel:'About',body:'You deserve straightforward answers, useful guidance, and someone who keeps the details moving. Local knowledge, clear communication, and a smoother experience from start to finish.'},{id:'services',type:'services',title:'How I can help',inNav:true,navLabel:'Services',items:[{title:'Buying',body:'Get informed, ask the right questions, and find a home that fits your goals.'},{title:'Selling',body:'Prepare with confidence and position your home for what’s next.'},{title:'Relocating',body:'Feel at home in Colorado with helpful guidance and local insights.'}]},{id:'resources',type:'resources',title:'Good information. More confident decisions.',inNav:true,navLabel:'Resources',body:'Practical guides to help you prepare, ask better questions, and take the next step.',items:[{title:'Denver relocation guide',desc:'Neighborhood questions, moving preparation, and a useful starting checklist.',lead:true},{title:'Buyer preparation checklist',desc:'Organize your priorities before your first consultation.',lead:true}]},{id:'faqs',type:'faqs',title:'Common questions',inNav:true,navLabel:'FAQs',items:[{q:'How do we get started?',a:'We start with a short conversation about your goals, timeline, and what matters most — no pressure.'},{q:'What areas do you serve?',a:'The Denver metro and the Front Range.'}]},{id:'booking',type:'booking',title:'Start with a little clarity.',ctaLabel:'Book a conversation',bookingUrl:'https://client.jaderealestate.com/book/emilie',body:'Explore practical guidance for your next move.'}]};
+async function handleAgentSite(parts, kind){
+  const slug=decodeURIComponent(parts[1]||'').toLowerCase().replace(/[^a-z0-9-]/g,'');
+  if(!slug) return notFound();
+  if(slug==='demo'){ return new Response(kind==='linkbio'?renderLinkBio({brand:AS_DEMO.brand,contact:AS_DEMO.contact,tagline:'Helping you buy & sell across the Denver metro.',links:[{label:'Book a consultation',url:'https://client.jaderealestate.com/book/emilie'},{label:'Denver relocation guide',url:'#'},{label:'Search homes',url:'#'}]},'Emilie Smith'):renderAgentSite(AS_DEMO,'Emilie Smith Real Estate'),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}}); }
+  let row=null;
+  try{ const r=await fetch(`${SB}/rest/v1/rpc/get_agent_site`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_slug:slug,p_kind:kind})}); const j=await r.json(); row=Array.isArray(j)?j[0]:(j&&j.published?j:null); }catch(e){}
+  if(!row||!row.published) return notFound();
+  const html=kind==='linkbio'?renderLinkBio(row.published,row.title||''):renderAgentSite(row.published,row.title||'');
+  return new Response(html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'public, max-age=120'}});
+}
+
 export default {
   async fetch(request, env){
     const url=new URL(request.url); const parts=url.pathname.split('/').filter(Boolean);
     if(parts[0]==='q'){ return await handleQuestionnaire(parts); }
     if(parts[0]==='f'){ return await handleForm(parts); }
     if(parts[0]==='site'){ return await handlePortalSite(parts, request); }
+    if(parts[0]==='w'){ return await handleAgentSite(parts, 'website'); }
+    if(parts[0]==='l'){ return await handleAgentSite(parts, 'linkbio'); }
     if(parts[0]==='g'){ return await handleLanding(parts); }
     if(parts[0]==='book'){ return handleBook(parts); }
     if(parts.length===0){ if(env.ASSETS){try{const res=await env.ASSETS.fetch(request);if(res&&res.status!==404)return res;}catch(e){}} return notFound(); }
