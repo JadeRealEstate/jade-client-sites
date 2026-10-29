@@ -2029,8 +2029,8 @@ async function handlePortalSite(parts, request){
 // ===== Landing pages (lead magnets) — public, served at /g/<slug> =====
 async function fetchLanding(slug){
   try{
-    const r=await fetch(`${SB}/rest/v1/landing_pages?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=agent_id,title,data&limit=1`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
-    const rows=await r.json(); return Array.isArray(rows)?rows[0]:null;
+    const r=await fetch(`${SB}/rest/v1/rpc/get_landing_page`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_slug:slug})});
+    const rows=await r.json(); return Array.isArray(rows)?(rows[0]||null):((rows&&rows.agent_id)?rows:null);
   }catch(e){ return null; }
 }
 async function fetchAgentCard(agentId){
@@ -2042,8 +2042,7 @@ async function fetchAgentCard(agentId){
 async function fetchResources(ids){
   if(!ids.length) return {};
   try{
-    const inlist=ids.map(encodeURIComponent).join(',');
-    const r=await fetch(`${SB}/rest/v1/agent_resources?id=in.(${inlist})&select=id,url,filename,cover_url,title,learn`,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    const r=await fetch(`${SB}/rest/v1/rpc/get_agent_resources`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_ids:ids})});
     const rows=await r.json(); const m={}; (Array.isArray(rows)?rows:[]).forEach(x=>{m[x.id]=x;}); return m;
   }catch(e){ return {}; }
 }
