@@ -2394,9 +2394,12 @@ function renderAgentSite(pub, title, opts){
   pub=pub||{}; const b=pub.brand||{}; const c=pub.contact||{}; const col=asColors(b); const fn=asFonts(b);
   const hero=pub.hero||{}; const secs=Array.isArray(pub.sections)?pub.sections:[];
   const navItems=secs.filter(function(s){return s.enabled!==false && s.inNav && s.title;}).map(function(s){return '<a href="#'+esc(s.id||s.type)+'">'+esc(s.navLabel||s.title)+'</a>';}).join('');
-  const bookUrl=asUrl((pub.contact&&pub.contact.bookingUrl)||hero.ctaPrimary&&hero.ctaPrimary.href||'#');
+  const bookingSec=secs.find(function(s){return s&&s.type==='booking'&&(s.bookingUrl||s.url);});
+  const extBook=[(pub.contact&&pub.contact.bookingUrl),(hero.ctaPrimary&&hero.ctaPrimary.href),(bookingSec&&(bookingSec.bookingUrl||bookingSec.url))].map(function(x){return String(x||'').trim();}).find(function(x){return x&&x!=='#'&&!/^#/.test(x);})||'';
+  const bookUrl=asUrl(extBook||'#');
   const logo=b.logoUrl?('<img class="as-logo" src="'+esc(asUrl(b.logoUrl))+'" alt="'+esc(b.name||'')+'">'):('<span class="as-word">'+esc(b.name||c.name||'')+'</span>');
   const cta1=hero.ctaPrimary||{label:'Book a call',href:bookUrl}; const cta2=hero.ctaSecondary;
+  const cta1href=(cta1.href&&cta1.href!=='#'&&!/^#/.test(cta1.href))?asUrl(cta1.href):bookUrl;
   const heroImg=hero.image?('<div class="as-heroimg"><img src="'+esc(asUrl(hero.image))+'" alt=""></div>'):'';
   const head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     +'<title>'+esc(title||b.name||c.name||'Real Estate')+'</title>'+asFavicon(b)
@@ -2440,7 +2443,7 @@ function renderAgentSite(pub, title, opts){
     +(hero.eyebrow?'<div class="as-eyebrow">'+esc(hero.eyebrow)+'</div>':'')
     +'<h1>'+esc(hero.headline||'')+'</h1>'
     +(hero.subhead?'<p class="sub">'+esc(hero.subhead)+'</p>':'')
-    +'<div class="as-hbtns"><a class="as-btn" href="'+esc(asUrl(cta1.href||bookUrl))+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':'')+'</div>'
+    +'<div class="as-hbtns"><a class="as-btn" href="'+esc(cta1href)+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':'')+'</div>'
     +heroImg+'</div></section>';
   const body=secs.map(function(s){return asSection(s,pub,opts);}).join('');
   const anyLead=secs.some(function(s){return s&&s.type==='resources'&&s.enabled!==false&&(s.items||[]).some(function(it){return it&&it.lead!==false&&it.resourceId;});});
