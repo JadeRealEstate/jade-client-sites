@@ -2330,6 +2330,7 @@ function asFavicon(b){ b=b||{}; const col=asColors(b);
   return '<link rel="icon" type="image/svg+xml" href="'+asMono(b.name,col.p)+'">';
 }
 function asUrl(u){ u=String(u||'').trim(); if(!u) return ''; if(/^(https?:|mailto:|tel:|#|\/)/i.test(u)) return u; return 'https://'+u; }
+function tagBook(h){ h=String(h||''); return (/\/book\//.test(h) && !/[?&]src=/.test(h)) ? (h+(h.indexOf('?')>=0?'&':'?')+'src=website') : h; }
 function asTel(p){ const d=String(p||'').replace(/[^0-9+]/g,''); return d; }
 function asLegal(pub){
   const c=pub.contact||{}; const b=pub.brand||{};
@@ -2376,7 +2377,7 @@ function asSection(sec, pub, opts){
     const staticCards=items.map(function(it){ const href=it.url?asUrl(it.url):'#'; const label=(it.lead!==false&&it.resourceId)?'Get the guide':'Download'; return card(it,'<a class="as-btn ghost" href="'+esc(href)+'"'+(it.url?' target="_blank" rel="noopener"':'')+'>'+label+'</a>'); }).join('');
     return '<section class="as-sec as-alt"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+'<div class="as-reslist">'+staticCards+'</div></div></section>';
   }
-  if(t==='booking'){ const url=sec.bookingUrl||sec.url||(pub.contact&&pub.contact.bookingUrl)||'#'; return '<section class="as-sec as-cta"'+idAttr+'><div class="as-wrap as-narrow" style="text-align:center">'+title+body+'<a class="as-btn" href="'+esc(asUrl(url))+'">'+esc(sec.ctaLabel||'Book a call')+'</a></div></section>'; }
+  if(t==='booking'){ const url=sec.bookingUrl||sec.url||(pub.contact&&pub.contact.bookingUrl)||'#'; return '<section class="as-sec as-cta"'+idAttr+'><div class="as-wrap as-narrow" style="text-align:center">'+title+body+'<a class="as-btn" href="'+esc(tagBook(asUrl(url)))+'">'+esc(sec.ctaLabel||'Book a call')+'</a></div></section>'; }
   return '<section class="as-sec"'+idAttr+'><div class="as-wrap as-narrow">'+title+body+img+'</div></section>';
 }
 function asFonts(b){
@@ -2399,7 +2400,7 @@ function renderAgentSite(pub, title, opts){
   const bookUrl=asUrl(extBook||'#');
   const logo=b.logoUrl?('<img class="as-logo" src="'+esc(asUrl(b.logoUrl))+'" alt="'+esc(b.name||'')+'">'):('<span class="as-word">'+esc(b.name||c.name||'')+'</span>');
   const cta1=hero.ctaPrimary||{label:'Book a call',href:bookUrl}; const cta2=hero.ctaSecondary;
-  const cta1href=(cta1.href&&cta1.href!=='#'&&!/^#/.test(cta1.href))?asUrl(cta1.href):bookUrl;
+  const cta1href=tagBook((cta1.href&&cta1.href!=='#'&&!/^#/.test(cta1.href))?asUrl(cta1.href):bookUrl);
   const heroImg=hero.image?('<div class="as-heroimg"><img src="'+esc(asUrl(hero.image))+'" alt=""></div>'):'';
   const head='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     +'<title>'+esc(title||b.name||c.name||'Real Estate')+'</title>'+asFavicon(b)
@@ -2444,8 +2445,8 @@ function renderAgentSite(pub, title, opts){
   const featCtas=ctas.filter(function(c){return c.featured;});
   const restCtas=ctas.filter(function(c){return !c.featured;});
   const ext=function(u){return /^https?:/i.test(String(u||''))?' target="_blank" rel="noreferrer"':'';};
-  const heroBtns=featCtas.length?featCtas.map(function(c,i){return '<a class="as-btn'+(i>0?' ghost':'')+'" href="'+esc(asUrl(c.href))+'"'+ext(c.href)+'>'+esc(c.label||'Get in touch')+'</a>';}).join(''):('<a class="as-btn" href="'+esc(cta1href)+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':''));
-  const ctaStrip=restCtas.length?('<section class="as-sec"><div class="as-wrap as-narrow" style="text-align:center"><div class="as-h2" style="font-size:22px">Get in touch</div><div class="as-ctastrip">'+restCtas.map(function(c){return '<a class="as-pill" href="'+esc(asUrl(c.href))+'"'+ext(c.href)+'>'+esc(c.label||'Link')+'</a>';}).join('')+'</div></div></section>'):'';
+  const heroBtns=featCtas.length?featCtas.map(function(c,i){return '<a class="as-btn'+(i>0?' ghost':'')+'" href="'+esc(tagBook(asUrl(c.href)))+'"'+ext(c.href)+'>'+esc(c.label||'Get in touch')+'</a>';}).join(''):('<a class="as-btn" href="'+esc(cta1href)+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':''));
+  const ctaStrip=restCtas.length?('<section class="as-sec"><div class="as-wrap as-narrow" style="text-align:center"><div class="as-h2" style="font-size:22px">Get in touch</div><div class="as-ctastrip">'+restCtas.map(function(c){return '<a class="as-pill" href="'+esc(tagBook(asUrl(c.href)))+'"'+ext(c.href)+'>'+esc(c.label||'Link')+'</a>';}).join('')+'</div></div></section>'):'';
   const heroHtml='<section class="as-hero"><div class="as-wrap">'
     +(hero.eyebrow?'<div class="as-eyebrow">'+esc(hero.eyebrow)+'</div>':'')
     +'<h1>'+esc(hero.headline||'')+'</h1>'
