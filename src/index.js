@@ -2435,20 +2435,27 @@ function renderAgentSite(pub, title, opts){
     +'.as-gbtn{cursor:pointer;font:inherit}.as-gbtn.got{background:var(--p);color:#fff;border-color:var(--p)}'
     +'.as-lfmsg{font-size:13px;font-weight:600;color:#b4452f;margin-top:10px;min-height:1px}.as-lffine{font-size:12px;color:#6a756d;margin:10px 0 0}'
     +'.as-cta{background:var(--p);color:#fff}.as-cta .as-h2{color:#fff}.as-cta .as-btn{background:#fff;color:var(--p);border-color:#fff}'
+    +'.as-ctastrip{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}.as-pill{display:inline-block;border:1px solid var(--p);color:var(--p);text-decoration:none;font-weight:600;font-size:14px;padding:9px 16px;border-radius:999px}.as-pill:hover{background:var(--p);color:#fff}'
     +'.as-ftr{background:var(--ink);color:#cdd6cc;padding:40px 0;margin-top:0}.as-ftr .as-wrap{max-width:900px}.as-fbrand{font-family:var(--serif);font-size:22px;color:#fff}.as-fc{margin:6px 0 16px}.as-fc a{color:#cdd6cc;text-decoration:none}.as-eho{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.04em;color:#fff;margin-bottom:10px}.as-legal{font-size:12px;line-height:1.6;color:#9fb09d;margin:0 0 10px}.as-copy{font-size:12px;color:#7f907d;margin:0}'
     +'@media(max-width:760px){.as-nav{display:none}.as-split,.as-grid3,.as-grid2,.as-lf{grid-template-columns:1fr}}'
     +'</style></head><body>';
   const header='<header class="as-hd"><div class="as-hdin">'+logo+'<nav class="as-nav">'+navItems+'<a class="as-btn" href="'+esc(bookUrl)+'">'+esc((pub.contact&&pub.contact.ctaLabel)||'Book a call')+'</a></nav></div></header>';
+  const ctas=Array.isArray(pub.ctas)?pub.ctas.filter(function(c){return c&&c.enabled!==false&&c.href&&String(c.href).trim();}):[];
+  const featCtas=ctas.filter(function(c){return c.featured;});
+  const restCtas=ctas.filter(function(c){return !c.featured;});
+  const ext=function(u){return /^https?:/i.test(String(u||''))?' target="_blank" rel="noreferrer"':'';};
+  const heroBtns=featCtas.length?featCtas.map(function(c,i){return '<a class="as-btn'+(i>0?' ghost':'')+'" href="'+esc(asUrl(c.href))+'"'+ext(c.href)+'>'+esc(c.label||'Get in touch')+'</a>';}).join(''):('<a class="as-btn" href="'+esc(cta1href)+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':''));
+  const ctaStrip=restCtas.length?('<section class="as-sec"><div class="as-wrap as-narrow" style="text-align:center"><div class="as-h2" style="font-size:22px">Get in touch</div><div class="as-ctastrip">'+restCtas.map(function(c){return '<a class="as-pill" href="'+esc(asUrl(c.href))+'"'+ext(c.href)+'>'+esc(c.label||'Link')+'</a>';}).join('')+'</div></div></section>'):'';
   const heroHtml='<section class="as-hero"><div class="as-wrap">'
     +(hero.eyebrow?'<div class="as-eyebrow">'+esc(hero.eyebrow)+'</div>':'')
     +'<h1>'+esc(hero.headline||'')+'</h1>'
     +(hero.subhead?'<p class="sub">'+esc(hero.subhead)+'</p>':'')
-    +'<div class="as-hbtns"><a class="as-btn" href="'+esc(cta1href)+'">'+esc(cta1.label||'Book a call')+'</a>'+(cta2&&cta2.label?'<a class="as-btn ghost" href="'+esc(asUrl(cta2.href||'#'))+'">'+esc(cta2.label)+'</a>':'')+'</div>'
+    +'<div class="as-hbtns">'+heroBtns+'</div>'
     +heroImg+'</div></section>';
   const body=secs.map(function(s){return asSection(s,pub,opts);}).join('');
   const anyLead=secs.some(function(s){return s&&s.type==='resources'&&s.enabled!==false&&(s.items||[]).some(function(it){return it&&it.lead!==false&&it.resourceId;});});
   const leadScript=(opts.live&&opts.slug&&anyLead)?asResourceScript():'';
-  return head+header+heroHtml+body+asLegal(pub)+leadScript+'</body></html>';
+  return head+header+heroHtml+body+ctaStrip+asLegal(pub)+leadScript+'</body></html>';
 }
 function asResourceScript(){
   return '<script>(function(){'
