@@ -2171,6 +2171,7 @@ function renderLanding(slug,page,ag){
   const avatarHtml=avatar?`<img class="av" src="${esc(avatar)}" alt="">`:`<div class="av ph">${esc((displayName||'J').slice(0,1))}</div>`;
   const _ti=d.topImage||'both'; const _showLogo=(_ti==='both'||_ti==='logo')&&logo; const _showAv=(_ti==='both'||_ti==='headshot')&&avatar; const headImgs=((_showLogo?`<img class="logo" src="${esc(logo)}" alt="">`:'')+(_showAv?`<img class="av" src="${esc(avatar)}" alt="">`:''))||avatarHtml;
   const footer=mode==='agent'?esc(brand.business||displayName):'Jade Real Estate';
+  const beacon=`<script>(function(){try{var SLUG=${JSON.stringify(slug)},EP='https://agentapp.jaderealestate.com/api/landing-ingest';var q=new URLSearchParams(location.search);var vid;try{vid=sessionStorage.getItem('jlv_'+SLUG);}catch(e){}if(!vid){vid=Date.now().toString(36)+Math.random().toString(36).slice(2,10);try{sessionStorage.setItem('jlv_'+SLUG,vid);}catch(e){}}var start=Date.now();var base={visit_id:vid,slug:SLUG,path:location.pathname,referrer:document.referrer||'',device:(window.matchMedia&&window.matchMedia('(max-width:640px)').matches)?'mobile':'desktop',utm_source:q.get('utm_source')||'',utm_medium:q.get('utm_medium')||'',utm_campaign:q.get('utm_campaign')||''};function send(extra){try{var b=JSON.stringify(Object.assign({},base,extra||{}));if(navigator.sendBeacon){navigator.sendBeacon(EP,new Blob([b],{type:'application/json'}));}else{fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:b,keepalive:true}).catch(function(){});}}catch(e){}}send({duration_ms:0});function finish(){send({duration_ms:Date.now()-start});}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')finish();});window.addEventListener('pagehide',finish);}catch(e){}})();<\/script>`;
   const body=`<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23335143%27%2F%3E%3Ctext%20x%3D%2750%%27%20y%3D%2753%%27%20dominant-baseline%3D%27central%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%26quot%3BTimes%20New%20Roman%26quot%3B%2Cserif%27%20font-style%3D%27italic%27%20font-size%3D%2746%27%20font-weight%3D%27400%27%20fill%3D%27%23f2efeb%27%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${displayName} · ${page.title?esc(page.title):'Jade Real Estate'}</title>
 <style>
@@ -2316,6 +2317,7 @@ ${guideMode?`<script>
   })(btns[i]);}
 })();
 </script>`:''}
+${beacon}
 </body></html>`;
   return body;
 }
