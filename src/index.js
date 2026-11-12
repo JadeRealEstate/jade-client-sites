@@ -1692,6 +1692,7 @@ function renderApp(pages, clientSlug, openTab, fb, me, myEmail, vis, msgs, manag
   if(hasSellJ)tabs+=`<button class="tab" data-tab="capex" data-journey="sell">Net sheet</button>`;
   tabs+=`<button class="tab" data-tab="roadmap" data-journey="both">Roadmap</button>`;
   tabs+=`<button class="tab" data-tab="resources" data-journey="both">Resources</button>`;
+  for(const _cp of visiblePages){ if(_cp.page_type==='custom') tabs+=`<button class="tab" data-tab="p-${slugOf(_cp)}" data-journey="both">${esc(labelOf(_cp))}</button>`; }
   const navright=`<div class="navright"><button class="navlink" data-tab="messages">Contact ${_afirst}</button><button class="navicon" data-tab="settings" title="Account" aria-label="Account settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20.5a8 8 0 0 1 16 0"/></svg></button></div>`;
   const initJ=(/^(activity|showings|offers)$/.test(openTab||'')||(!hasBuyJ&&hasSellJ))?'sell':'buy';
   let body;
@@ -2028,6 +2029,49 @@ async function handlePortalSite(parts, request){
     if(row&&row.html) return new Response(row.html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }catch(e){}
   return notFound();
+}
+
+// ===== Public custom page (no login) — a custom hub page toggled public =====
+async function fetchPublicPage(clientSlug, slug){
+  try{
+    const r=await fetch(`${SB}/rest/v1/rpc/get_public_client_page`,{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'},body:JSON.stringify({p_client_slug:clientSlug,p_slug:slug})});
+    const rows=await r.json(); const row=Array.isArray(rows)?rows[0]:((rows&&rows.content)?rows:null);
+    return (row&&row.content)?row:null;
+  }catch(e){ return null; }
+}
+function renderPublicPage(row, brand){
+  brand=brand||{}; const c=row.content||{};
+  const primary=/^#[0-9a-fA-F]{6}$/.test(brand.primaryColor||'')?brand.primaryColor:'#335143';
+  const accent=/^#[0-9a-fA-F]{6}$/.test(brand.accentColor||'')?brand.accentColor:'#b08d57';
+  const title=esc(c.headline||c.tabLabel||'Jade Real Estate');
+  const body='<div>'+pageSection({page_type:'custom',content:c}).replace(/^<div data-sec="[^"]*" hidden>/,'').replace(/<\/div>\s*$/,'')+'</div>';
+  const biz=esc(brand.business||brand.fullName||'Jade Real Estate');
+  const css='*{box-sizing:border-box}html,body{margin:0}body{font-family:Montserrat,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#15201a;background:#f2efeb;line-height:1.55}'
+    +'.wrap{max-width:720px;margin:0 auto;padding:30px 18px 70px}'
+    +'.top{text-align:center;margin-bottom:8px}.top .lg{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:22px;color:'+primary+'}'
+    +'h1{font-family:Georgia,serif;font-size:28px;margin:14px 0 2px;color:#15201a;font-weight:700}'
+    +'.sub{color:#546751;font-size:16px;margin:0 0 6px}'
+    +'.card{background:#fff;border:1px solid #e3e7e0;border-radius:16px;padding:18px 20px;margin-top:16px}'
+    +'.klabel{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#78837a;font-weight:700}'
+    +'.acc{background:#fff;border:1px solid #e3e7e0;border-radius:14px;margin-top:12px;overflow:hidden}'
+    +'.acc .h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 18px;cursor:pointer;font-weight:700;font-size:16px}'
+    +'.acc .h .c{color:'+primary+';font-size:20px;font-weight:400;transition:transform .15s}.acc .h.open .c{transform:rotate(45deg)}'
+    +'.acc .b{padding:0 18px 16px;font-size:15px;color:#2f3b33}'
+    +'.prop{border-top:1px solid #eef0ec;padding:12px 0}.prop:first-child{border-top:0}.addr{font-weight:700}'
+    +'.tl{margin-top:4px}.tlrow{display:flex;gap:10px;padding:6px 0}.tldot{width:9px;height:9px;border-radius:50%;background:'+accent+';margin-top:6px;flex:none}.tlmeta{font-weight:600;font-size:13px;color:#546751}'
+    +'.row{display:flex;align-items:center;gap:8px}.pill{display:inline-block;background:'+primary+'14;color:'+primary+';border-radius:999px;padding:4px 11px;font-size:13px;font-weight:600;margin:3px 4px 0 0}'
+    +'.why{color:#78837a;font-size:14px}.sub{margin-top:2px}'
+    +'.btn{display:inline-block;background:'+primary+';color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:11px 18px;font-size:15px;border:0;cursor:pointer}.btn.small{padding:8px 13px;font-size:13.5px}.btn.ghost{background:#fff;color:'+primary+';border:1px solid #d9ded6}'
+    +'a{color:'+primary+'}.foot{text-align:center;color:#8a9186;font-size:12px;margin-top:28px}'
+    +'.stepcard .bar,.bar{height:7px;background:#eef0ec;border-radius:999px;overflow:hidden;margin:8px 0}.stepfill{display:block;height:100%;background:'+primary+'}'
+    +'.chk{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:#fff;border:0;border-top:1px solid #eef0ec;padding:10px 0;font-size:15px;color:#15201a}.chk .m{color:'+primary+'}';
+  const accjs='<script>document.addEventListener("click",function(e){var h=e.target.closest&&e.target.closest("[data-acc]");if(h){var b=h.nextElementSibling;if(b)b.hidden=!b.hidden;h.classList.toggle("open");}});<\/script>';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    +'<title>'+title+' · Jade Real Estate</title>'
+    +'<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    +'<style>'+css+'</style></head><body><div class="wrap"><div class="top"><div class="lg">Jade</div></div>'
+    +body
+    +'<div class="foot">'+biz+' · Jade Real Estate</div></div>'+accjs+'</body></html>';
 }
 
 // ===== Landing pages (lead magnets) — public, served at /g/<slug> =====
@@ -2539,7 +2583,10 @@ export default {
     const clientSlug=decodeURIComponent(parts[0]).toLowerCase();
     const _tok=getCookie(request,'sb_at'); const _user=_tok?await getUser(_tok):null;
     if(parts[1]&&parts[1].toLowerCase().endsWith('.ics')){ if(!_user)return notFound(); const _cm=await viewerCanManage(clientSlug,_tok,_user.id); const type=TYPE_BY_SLUG[parts[1].toLowerCase().slice(0,-4)]; const pages=await fetchPages(clientSlug,_tok,_cm); const p=pages.find(x=>x.page_type===type)||pages.find(x=>daysFromContent(x.content||{}).length); if(!p)return notFound(); const dq=url.searchParams.get('d'); const di=(dq!=null&&/^\d+$/.test(dq))?parseInt(dq,10):null; return new Response(buildICS(p.content||{},di),{headers:{'content-type':'text/calendar; charset=utf-8','content-disposition':'attachment; filename="jade-tour.ics"'}}); }
-    if(!_user){ return authResp(!!getCookie(request,'sb_rt')); }
+    if(!_user){
+      if(parts[1]){ const _pslug=decodeURIComponent(parts[1]).toLowerCase(); const _pub=await fetchPublicPage(clientSlug,_pslug); if(_pub){ const _ag=await fetchAgentCard(_pub.agent_id||''); return new Response(renderPublicPage(_pub,(_ag&&_ag.brand)||{}),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}}); } }
+      return authResp(!!getCookie(request,'sb_rt'));
+    }
     try{
       const _rawManage=await viewerCanManage(clientSlug,_tok,_user.id);
       const _asClient=url.searchParams.get('asclient')==='1';
