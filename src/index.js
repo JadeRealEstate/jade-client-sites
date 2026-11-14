@@ -2629,7 +2629,9 @@ function handleBook(parts) {
   return new Response(bookPage(slug), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
 function bookPage(slug) {
-  const cfg = JSON.stringify({ slug: slug, app: BOOK_APP });
+  // The slug comes from the URL and is written into an inline <script>, so
+  // escape anything that could close the tag or start markup.
+  const cfg = JSON.stringify({ slug: slug, app: BOOK_APP }).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
   return '<!doctype html><html lang="en"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<title>Book a time · Jade Real Estate</title>'
