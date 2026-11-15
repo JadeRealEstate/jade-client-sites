@@ -2381,7 +2381,10 @@ ${beacon}
 }
 
 // ===== Agent websites + link-in-bio — public, served at /w/<slug> and /l/<slug> =====
-function asColors(b){ b=b||{}; return { p:b.primaryColor||'#335143', s:b.secondaryColor||'#546751', a:b.accentColor||'#a6b6a4', ink:'#15201a', cream:'#f2efeb' }; }
+// Brand colours are written into a <style> block, so accept only real colour values
+// (hex, a plain colour name, or rgb()/hsl() made of numbers); anything else falls back.
+function asColor(v, d){ v=String(v==null?'':v).trim(); return (/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v)||/^[a-z]{3,24}$/i.test(v)||/^(?:rgb|hsl)a?\([0-9.,%\s\/]{1,40}\)$/i.test(v))?v:d; }
+function asColors(b){ b=b||{}; return { p:asColor(b.primaryColor,'#335143'), s:asColor(b.secondaryColor,'#546751'), a:asColor(b.accentColor,'#a6b6a4'), ink:'#15201a', cream:'#f2efeb' }; }
 function asMono(name, color){
   const init=String(name||'').trim().replace(/[^A-Za-z ]/g,'').split(/\s+/).filter(Boolean).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase()||'J';
   const bg=/^#[0-9a-fA-F]{6}$/.test(color||'')?color:'#335143';
@@ -2566,6 +2569,9 @@ const AS_CORS={'access-control-allow-origin':'*','access-control-allow-methods':
 async function handleSitePreview(request){
   if(request.method==='OPTIONS') return new Response(null,{status:204,headers:AS_CORS});
   if(request.method!=='POST') return new Response('method',{status:405,headers:AS_CORS});
+  // The builder posts JSON with fetch. A plain HTML form on another site cannot send this
+  // content type, so a visitor's browser can never be navigated to a page built from someone else's content.
+  if(!/^application\/json\b/i.test(request.headers.get('content-type')||'')) return new Response('unsupported',{status:415,headers:AS_CORS});
   let body={}; try{ body=await request.json(); }catch(e){}
   const content=body&&body.content?body.content:{}; const kind=body&&body.kind==='linkbio'?'linkbio':'website';
   const html=kind==='linkbio'?renderLinkBio(content,(content.brand&&content.brand.name)||''):renderAgentSite(content,(content.brand&&content.brand.name)||'');
